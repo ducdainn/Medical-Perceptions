@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Xác nhận xóa hóa đơn - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">Xác nhận xóa hóa đơn</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'pos:sale_list' %}">Danh sách hóa đơn</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'pos:sale_detail' sale.id %}">Chi tiết hóa đơn #{{ sale.id }}</a></li>
+                    <li class="breadcrumb-item active">Xác nhận xóa</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Xác nhận xóa</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-center mb-4">
+                        Bạn có chắc chắn muốn xóa hóa đơn <strong>#{{ sale.id }}</strong> của khách hàng <strong>{{ sale.customer_name }}</strong> không?<br>
+                        <span class="text-danger">Lưu ý: Hành động này không thể hoàn tác.</span>
+                    </p>
+
+                    <div class="alert alert-warning">
+                        <h6 class="fw-bold">Thông tin hóa đơn sẽ bị xóa:</h6>
+                        <ul class="mb-0">
+                            <li>Khách hàng: {{ sale.customer_name }}</li>
+                            <li>Ngày tạo: {{ sale.created_at|date:"d/m/Y H:i" }}</li>
+                            <li>Trạng thái: 
+                                {% if sale.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Chờ xử lý</span>
+                                {% elif sale.status == 'completed' %}
+                                <span class="badge bg-success">Hoàn thành</span>
+                                {% elif sale.status == 'cancelled' %}
+                                <span class="badge bg-danger">Đã hủy</span>
+                                {% endif %}
+                            </li>
+                            <li>Số mặt hàng: {{ sale.items.all.count }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <a href="{% url 'pos:sale_detail' sale.id %}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Xác nhận xóa
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

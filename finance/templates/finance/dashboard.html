@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <!-- Tổng quan tài chính -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Tổng doanh thu</h5>
+                    <h3 class="card-text">{{ total_revenue|floatformat:0 }} đ</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Tổng chi phí</h5>
+                    <h3 class="card-text">{{ total_expense|floatformat:0 }} đ</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Thu nhập ròng</h5>
+                    <h3 class="card-text">{{ net_income|floatformat:0 }} đ</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Các nút tác vụ nhanh -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Thao tác nhanh</h5>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'finance:revenue_create' %}" class="btn btn-success">Thêm doanh thu</a>
+                        <a href="{% url 'finance:expense_create' %}" class="btn btn-danger">Thêm chi phí</a>
+                        <a href="{% url 'finance:revenue_list' %}" class="btn btn-info">Xem doanh thu</a>
+                        <a href="{% url 'finance:expense_list' %}" class="btn btn-info">Xem chi phí</a>
+                        <a href="{% url 'finance:report_create' %}" class="btn btn-primary">Tạo báo cáo</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doanh thu gần đây -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Doanh thu gần đây</h5>
+                    <a href="{% url 'finance:revenue_list' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_revenues %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Ngày</th>
+                                    <th>Số tiền</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for revenue in recent_revenues %}
+                                <tr>
+                                    <td>{{ revenue.get_revenue_type_display }}</td>
+                                    <td>{{ revenue.date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ revenue.amount|floatformat:0 }} đ</td>
+                                    <td>
+                                        <a href="{% url 'finance:revenue_edit' revenue.id %}" class="btn btn-sm btn-warning">Sửa</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có dữ liệu doanh thu gần đây.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chi phí gần đây -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Chi phí gần đây</h5>
+                    <a href="{% url 'finance:expense_list' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Ngày</th>
+                                    <th>Số tiền</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in recent_expenses %}
+                                <tr>
+                                    <td>{{ expense.get_expense_type_display }}</td>
+                                    <td>{{ expense.date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ expense.amount|floatformat:0 }} đ</td>
+                                    <td>
+                                        <a href="{% url 'finance:expense_edit' expense.id %}" class="btn btn-sm btn-warning">Sửa</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có dữ liệu chi phí gần đây.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Báo cáo tài chính gần đây -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Báo cáo tài chính gần đây</h5>
+                    <a href="{% url 'finance:report_list' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Thời gian</th>
+                                    <th>Doanh thu</th>
+                                    <th>Chi phí</th>
+                                    <th>Thu nhập ròng</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>{{ report.get_report_type_display }}</td>
+                                    <td>{{ report.start_date|date:"d/m/Y" }} - {{ report.end_date|date:"d/m/Y" }}</td>
+                                    <td>{{ report.total_revenue|floatformat:0 }} đ</td>
+                                    <td>{{ report.total_expense|floatformat:0 }} đ</td>
+                                    <td>{{ report.net_income|floatformat:0 }} đ</td>
+                                    <td>
+                                        <a href="{% url 'finance:report_detail' report.id %}" class="btn btn-sm btn-info">Xem</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có báo cáo tài chính gần đây.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

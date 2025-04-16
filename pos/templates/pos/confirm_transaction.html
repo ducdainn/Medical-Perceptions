@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - ReViCARE{% endblock %}
+
+{% block extra_css %}
+<style>
+    .formset-item {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        position: relative;
+    }
+    .remove-form {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .empty-form {
+        display: none;
+    }
+    .transaction-info {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">{{ title }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'pos:transaction_list' %}">Danh sách giao dịch</a></li>
+                    <li class="breadcrumb-item active">Xác nhận giao dịch #{{ transaction.id }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="transaction-info">
+                <h5 class="mb-3">Thông tin giao dịch</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Mã giao dịch:</strong> #{{ transaction.id }}</p>
+                        <p><strong>Loại giao dịch:</strong> {{ transaction.get_transaction_type_display }}</p>
+                        {% if transaction.prescription %}
+                        <p><strong>Đơn thuốc:</strong> #{{ transaction.prescription.id }} - {{ transaction.prescription.patient_name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Người tạo:</strong> {{ transaction.created_by.get_full_name }}</p>
+                        <p><strong>Ngày tạo:</strong> {{ transaction.created_at|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Ghi chú:</strong> {{ transaction.notes|default:"Không có" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    Vui lòng kiểm tra lại thông tin.
+                </div>
+                {% endif %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.customer_name.id_for_label }}" class="form-label">Tên khách hàng</label>
+                            {{ form.customer_name }}
+                            {% if form.customer_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.customer_name.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.cashier.id_for_label }}" class="form-label">Thu ngân</label>
+                            {{ form.cashier }}
+                            {% if form.cashier.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cashier.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Trạng thái</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.status.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Ghi chú</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h4 class="mb-3">Các mặt hàng</h4>
+                {{ formset.management_form }}
+                
+                <div id="formset-container">
+                    {% for item_form in formset %}
+                    <div class="formset-item">
+                        {% if item_form.instance.pk %}
+                        {{ item_form.id }}
+                        {% endif %}
+                        
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-form">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Thuốc</label>
+                                    {{ item_form.medicine }}
+                                    {% if item_form.medicine.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ item_form.medicine.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Số lượng</label>
+                                    {{ item_form.quantity }}
+                                    {% if item_form.quantity.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ item_form.quantity.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Đơn vị</label>
+                                    {{ item_form.unit }}
+                                    {% if item_form.unit.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ item_form.unit.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Đơn giá</label>
+                                    {{ item_form.unit_price }}
+                                    {% if item_form.unit_price.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ item_form.unit_price.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if item_form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ item_form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="empty-form formset-item" id="empty-form">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-form">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Thuốc</label>
+                                {{ formset.empty_form.medicine }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Số lượng</label>
+                                {{ formset.empty_form.quantity }}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Đơn vị</label>
+                                {{ formset.empty_form.unit }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Đơn giá</label>
+                                {{ formset.empty_form.unit_price }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="add-form" class="btn btn-outline-primary mb-4">
+                    <i class="fas fa-plus"></i> Thêm sản phẩm
+                </button>
+                
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'pos:transaction_list' %}" class="btn btn-secondary me-2">Hủy</a>
+                    <button type="submit" class="btn btn-primary">Xác nhận giao dịch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Styling form elements
+    document.addEventListener('DOMContentLoaded', function() {
+        const formElements = document.querySelectorAll('input, select, textarea');
+        formElements.forEach(el => {
+            if (!el.classList.contains('form-check-input') && !el.classList.contains('btn')) {
+                el.classList.add('form-control');
+            }
+        });
+        
+        // Handle medicine selection and price updating
+        const medicineSelects = document.querySelectorAll('select[name$="-medicine"]');
+        medicineSelects.forEach(select => {
+            select.addEventListener('change', updatePrice);
+        });
+        
+        function updatePrice(e) {
+            const medicineId = e.target.value;
+            if (!medicineId) return;
+            
+            // Find the parent item container
+            const itemContainer = e.target.closest('.formset-item');
+            const priceInput = itemContainer.querySelector('input[name$="-unit_price"]');
+            
+            // Make AJAX request to get price
+            fetch(`/pos/api/medicine-price/?medicine_id=${medicineId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.price) {
+                        priceInput.value = data.price;
+                    }
+                })
+                .catch(error => console.error('Error fetching price:', error));
+        }
+    });
+    
+    // Formset handling
+    const addButton = document.getElementById('add-form');
+    const formsetContainer = document.getElementById('formset-container');
+    const emptyForm = document.getElementById('empty-form');
+    const totalFormsInput = document.querySelector('input[name="items-TOTAL_FORMS"]');
+    
+    // Set initial form count
+    let formCount = parseInt(totalFormsInput.value);
+    
+    // Add new form
+    addButton.addEventListener('click', () => {
+        const newForm = emptyForm.cloneNode(true);
+        newForm.classList.remove('empty-form');
+        newForm.id = '';
+        
+        // Update form indices
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formCount);
+        
+        // Append new form and update the counter
+        formsetContainer.appendChild(newForm);
+        totalFormsInput.value = ++formCount;
+        
+        // Add event listeners to the new form
+        addFormEventListeners(newForm);
+        
+        // Add style to form controls
+        newForm.querySelectorAll('input, select, textarea').forEach(el => {
+            if (!el.classList.contains('form-check-input') && !el.classList.contains('btn')) {
+                el.classList.add('form-control');
+            }
+        });
+        
+        // Add event listener for medicine select
+        const medicineSelect = newForm.querySelector('select[name$="-medicine"]');
+        if (medicineSelect) {
+            medicineSelect.addEventListener('change', function(e) {
+                const medicineId = e.target.value;
+                if (!medicineId) return;
+                
+                const itemContainer = e.target.closest('.formset-item');
+                const priceInput = itemContainer.querySelector('input[name$="-unit_price"]');
+                
+                fetch(`/pos/api/medicine-price/?medicine_id=${medicineId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.price) {
+                            priceInput.value = data.price;
+                        }
+                    })
+                    .catch(error => console.error('Error fetching price:', error));
+            });
+        }
+    });
+    
+    // Add event listeners to existing forms
+    document.querySelectorAll('.formset-item:not(#empty-form)').forEach(form => {
+        addFormEventListeners(form);
+    });
+    
+    // Helper function to add event listeners to a form
+    function addFormEventListeners(form) {
+        // Remove button event listener
+        const removeButton = form.querySelector('.remove-form');
+        if (removeButton) {
+            removeButton.addEventListener('click', () => {
+                if (confirm('Bạn có chắc muốn xóa mục này?')) {
+                    form.remove();
+                    
+                    // If this form has a DELETE input, mark it as deleted
+                    const deleteInput = form.querySelector('input[name$="-DELETE"]');
+                    if (deleteInput) {
+                        deleteInput.value = 'on';
+                        // Hide the form instead of removing it
+                        form.style.display = 'none';
+                    }
+                    
+                    // Otherwise just remove the form from the DOM
+                    else {
+                        form.remove();
+                    }
+                }
+            });
+        }
+    }
+</script>
+{% endblock %} 

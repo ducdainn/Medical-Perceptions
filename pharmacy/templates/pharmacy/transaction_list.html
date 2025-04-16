@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Danh sách giao dịch</h2>
+        <a href="{% url 'pharmacy:transaction_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Tạo giao dịch
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mã GD</th>
+                            <th>Loại</th>
+                            <th>Đơn thuốc</th>
+                            <th>Tổng tiền</th>
+                            <th>Người tạo</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>#{{ transaction.id }}</td>
+                            <td>
+                                {% if transaction.transaction_type == 'sale' %}
+                                    <span class="badge bg-success">Bán hàng</span>
+                                {% elif transaction.transaction_type == 'purchase' %}
+                                    <span class="badge bg-primary">Nhập hàng</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Trả hàng</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if transaction.prescription %}
+                                    <a href="{% url 'pharmacy:prescription_detail' transaction.prescription.id %}">
+                                        #{{ transaction.prescription.id }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.total_amount|floatformat:2 }} VNĐ</td>
+                            <td>{{ transaction.created_by.get_full_name }}</td>
+                            <td>{{ transaction.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'pharmacy:transaction_detail' transaction.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'pharmacy:transaction_edit' transaction.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTransactionModal{{ transaction.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Modal xác nhận xóa -->
+                                <div class="modal fade" id="deleteTransactionModal{{ transaction.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn có chắc chắn muốn xóa giao dịch #{{ transaction.id }}?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                <form action="{% url 'pharmacy:transaction_delete' transaction.id %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Xóa</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Chưa có giao dịch nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
