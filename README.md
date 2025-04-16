@@ -1,4 +1,4 @@
-# ReViCARE - Hệ thống Quản lý Nhà thuốc Thông minh
+# Hệ thống Quản lý Nhà thuốc Thông minh
 
 ReViCARE là một hệ thống quản lý nhà thuốc toàn diện được xây dựng bằng Django, tích hợp các tính năng hiện đại như chẩn đoán bệnh thông minh, quản lý thuốc, bán hàng và trợ lý ảo.
 
@@ -85,9 +85,3 @@ revicare/
 ## Giấy phép
 
 Dự án này được phân phối dưới giấy phép MIT. Xem `LICENSE` để biết thêm thông tin.
-
-## Liên hệ
-
-Your Name - email@example.com
-
-Project Link: [https://github.com/your-username/revicare](https://github.com/your-username/revicare) 
