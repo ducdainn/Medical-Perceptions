@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Quản lý nhà thuốc</h2>
+
+    <div class="row">
+        <!-- Thống kê thuốc -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Tổng số thuốc</h6>
+                            <h2 class="mb-0">{{ medicines.count }}</h2>
+                        </div>
+                        <i class="fas fa-pills fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-primary border-0">
+                    <a href="{% url 'pharmacy:medicine_list' %}" class="text-white text-decoration-none">
+                        <small>Xem chi tiết <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê tồn kho -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Tồn kho</h6>
+                            <h2 class="mb-0">{{ inventory.count }}</h2>
+                        </div>
+                        <i class="fas fa-box-open fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-success border-0">
+                    <a href="{% url 'pharmacy:inventory' %}" class="text-white text-decoration-none">
+                        <small>Xem chi tiết <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê đơn thuốc -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Đơn thuốc</h6>
+                            <h2 class="mb-0">{{ prescriptions.count }}</h2>
+                        </div>
+                        <i class="fas fa-file-medical fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-info border-0">
+                    <a href="{% url 'pharmacy:prescription_list' %}" class="text-white text-decoration-none">
+                        <small>Xem chi tiết <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê giao dịch -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Giao dịch</h6>
+                            <h2 class="mb-0">{{ transactions.count }}</h2>
+                        </div>
+                        <i class="fas fa-cash-register fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-warning border-0">
+                    <a href="{% url 'pharmacy:transaction_list' %}" class="text-white text-decoration-none">
+                        <small>Xem chi tiết <i class="fas fa-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Danh sách thuốc sắp hết -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Thuốc sắp hết</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tên thuốc</th>
+                                    <th>Tồn kho</th>
+                                    <th>Mức tối thiểu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in inventory %}
+                                    {% if item.quantity <= item.min_quantity %}
+                                    <tr>
+                                        <td>{{ item.medicine.name }}</td>
+                                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                                        <td>{{ item.min_quantity }} {{ item.unit }}</td>
+                                    </tr>
+                                    {% endif %}
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">Không có thuốc nào sắp hết</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đơn thuốc mới nhất -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Đơn thuốc mới nhất</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Bệnh nhân</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prescription in prescriptions|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'pharmacy:prescription_detail' prescription.id %}">
+                                            #{{ prescription.id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ prescription.patient_name }}</td>
+                                    <td>
+                                        {% if prescription.status == 'pending' %}
+                                            <span class="badge bg-warning">Chờ xử lý</span>
+                                        {% elif prescription.status == 'processing' %}
+                                            <span class="badge bg-info">Đang xử lý</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Hoàn thành</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ prescription.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Chưa có đơn thuốc nào</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

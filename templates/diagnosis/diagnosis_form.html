@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Tạo chẩn đoán mới - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'diagnosis:list' %}">Chẩn đoán</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Tạo mới</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="mb-4">Tạo chẩn đoán mới</h2>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h5>Triệu chứng</h5>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                {{ form.symptoms|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h5>Bệnh</h5>
+                            {{ form.disease|as_crispy_field }}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Ghi chú</h5>
+                            {{ form.notes|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu chẩn đoán
+                    </button>
+                    <a href="{% url 'diagnosis:list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ title }}</h1>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Thống kê hóa đơn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <h3>{{ pending_sales_count }}</h3>
+                            <p>Đang chờ xử lý</p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <h3>{{ completed_sales_count }}</h3>
+                            <p>Đã hoàn thành</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Doanh số bán hàng</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h3>{{ total_sales_amount|floatformat:0 }} VNĐ</h3>
+                    <p>Tổng doanh số</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Thao tác nhanh</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'pos:transaction_list' %}" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Xác nhận giao dịch
+                            {% if unconfirmed_transactions_count > 0 %}
+                            <span class="badge bg-warning text-dark">{{ unconfirmed_transactions_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'pos:sale_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-list"></i> Xem danh sách hóa đơn
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="card-title mb-0">Hóa đơn gần đây</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Mã</th>
+                                    <th>Khách hàng</th>
+                                    <th>Thời gian</th>
+                                    <th>Trạng thái</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in latest_sales %}
+                                <tr>
+                                    <td>#{{ sale.id }}</td>
+                                    <td>{{ sale.customer_name }}</td>
+                                    <td>{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if sale.status == 'pending' %}
+                                        <span class="badge bg-warning">Chờ xử lý</span>
+                                        {% elif sale.status == 'completed' %}
+                                        <span class="badge bg-success">Hoàn thành</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Đã hủy</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ sale.total_amount|floatformat:0 }} VNĐ</td>
+                                    <td>
+                                        <a href="{% url 'pos:sale_detail' sale.id %}" class="btn btn-sm btn-primary">Chi tiết</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Không có hóa đơn nào</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

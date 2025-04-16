@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quản lý tồn kho</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+            <i class="fas fa-plus"></i> Thêm tồn kho
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Thuốc</th>
+                            <th>Số lượng</th>
+                            <th>Đơn vị</th>
+                            <th>Số lượng tối thiểu</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory %}
+                        <tr>
+                            <td>{{ item.medicine.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ item.min_quantity }}</td>
+                            <td>
+                                {% if item.quantity <= item.min_quantity %}
+                                    <span class="badge bg-danger">Sắp hết</span>
+                                {% else %}
+                                    <span class="badge bg-success">Đủ hàng</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editInventoryModal{{ item.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteInventoryModal{{ item.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Modal sửa tồn kho -->
+                                <div class="modal fade" id="editInventoryModal{{ item.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Sửa tồn kho</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form action="{% url 'pharmacy:inventory_edit' item.id %}" method="post">
+                                                {% csrf_token %}
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Thuốc</label>
+                                                        <input type="text" class="form-control" value="{{ item.medicine.name }}" disabled>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Số lượng</label>
+                                                        <input type="number" name="quantity" class="form-control" value="{{ item.quantity }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Đơn vị</label>
+                                                        <input type="text" name="unit" class="form-control" value="{{ item.unit }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Số lượng tối thiểu</label>
+                                                        <input type="number" name="min_quantity" class="form-control" value="{{ item.min_quantity }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                    <button type="submit" class="btn btn-primary">Lưu</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal xác nhận xóa -->
+                                <div class="modal fade" id="deleteInventoryModal{{ item.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn có chắc chắn muốn xóa tồn kho của thuốc "{{ item.medicine.name }}"?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                <form action="{% url 'pharmacy:inventory_delete' item.id %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Xóa</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Chưa có tồn kho nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thêm tồn kho -->
+    <div class="modal fade" id="addInventoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm tồn kho</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{% url 'pharmacy:inventory_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Thuốc</label>
+                            <select name="medicine" class="form-select" required>
+                                <option value="">Chọn thuốc</option>
+                                {% for medicine in medicines %}
+                                <option value="{{ medicine.id }}">{{ medicine.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Số lượng</label>
+                            <input type="number" name="quantity" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Đơn vị</label>
+                            <input type="text" name="unit" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Số lượng tối thiểu</label>
+                            <input type="number" name="min_quantity" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Thêm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

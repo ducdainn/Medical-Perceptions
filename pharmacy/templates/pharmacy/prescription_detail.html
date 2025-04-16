@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Chi tiết đơn thuốc #{{ prescription.id }}</h2>
+        <div>
+            <a href="{% url 'pharmacy:prescription_edit' prescription.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Sửa
+            </a>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="fas fa-trash"></i> Xóa
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Thông tin đơn thuốc</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Mã đơn:</strong> #{{ prescription.id }}</p>
+                    <p><strong>Bệnh nhân:</strong> {{ prescription.patient_name }}</p>
+                    <p><strong>Dược sĩ:</strong> 
+                        {% if prescription.pharmacist %}
+                            {{ prescription.pharmacist.get_full_name }}
+                        {% else %}
+                            <span class="text-muted">Chưa phân công</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Ngày tạo:</strong> {{ prescription.created_at|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Trạng thái:</strong> 
+                        {% if prescription.status == 'pending' %}
+                            <span class="badge bg-warning">Chờ xử lý</span>
+                        {% elif prescription.status == 'processing' %}
+                            <span class="badge bg-info">Đang xử lý</span>
+                        {% else %}
+                            <span class="badge bg-success">Hoàn thành</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Ghi chú:</strong> {{ prescription.notes|default:"Không có" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Danh sách thuốc</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tên thuốc</th>
+                            <th>Số lượng</th>
+                            <th>Đơn vị</th>
+                            <th>Hướng dẫn</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.medicine.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ item.instructions|default:"Không có" }}</td>
+                            <td>{{ item.total_price|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Chưa có thuốc nào trong đơn</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-end"><strong>Tổng cộng:</strong></td>
+                            <td><strong>{{ prescription.total_amount|floatformat:0 }} VNĐ</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Bạn có chắc chắn muốn xóa đơn thuốc #{{ prescription.id }} không?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form action="{% url 'pharmacy:prescription_delete' prescription.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

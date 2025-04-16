@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết chẩn đoán - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'diagnosis:list' %}">Chẩn đoán</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h2 class="mb-4">{{ diagnosis.disease.name }}</h2>
+                    
+                    <div class="mb-4">
+                        <h5>Thông tin bệnh nhân</h5>
+                        <p>
+                            <strong>Họ tên:</strong> {{ diagnosis.patient.get_full_name }}<br>
+                            <strong>Email:</strong> {{ diagnosis.patient.email }}<br>
+                            <strong>Số điện thoại:</strong> {{ diagnosis.patient.phone_number }}<br>
+                            <strong>Ngày sinh:</strong> {{ diagnosis.patient.date_of_birth|date:"d/m/Y"|default:"Chưa cập nhật" }}
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Triệu chứng</h5>
+                        <div>
+                            {% for symptom in diagnosis.symptoms.all %}
+                                <span class="badge bg-secondary me-2 mb-2">{{ symptom.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Ghi chú</h5>
+                        <p>{{ diagnosis.notes|linebreaks|default:"Không có ghi chú" }}</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Thông tin chẩn đoán</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> Ngày tạo: {{ diagnosis.created_at|date:"d/m/Y H:i" }}<br>
+                                    <i class="fas fa-user-md"></i> Bác sĩ: {{ diagnosis.doctor.get_full_name|default:"Chưa phân công" }}
+                                </small>
+                            </p>
+                            <hr>
+                            <h6>Hướng điều trị</h6>
+                            <p>{{ diagnosis.disease.treatment_guidelines|linebreaks|default:"Chưa có hướng điều trị" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

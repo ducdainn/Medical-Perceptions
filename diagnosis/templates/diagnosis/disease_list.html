@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Danh sách bệnh</h2>
+        {% if user.is_staff %}
+        <div>
+            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addDiseaseModal">
+                <i class="fas fa-plus"></i> Thêm nhanh
+            </button>
+            <a href="{% url 'diagnosis:disease_create' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Thêm bệnh
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Tên bệnh</th>
+                    <th>Mô tả</th>
+                    <th>Triệu chứng</th>
+                    <th>Mức độ</th>
+                    {% if user.is_staff %}
+                    <th>Thao tác</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for disease in diseases %}
+                <tr>
+                    <td>{{ disease.name }}</td>
+                    <td>{{ disease.description|truncatewords:30 }}</td>
+                    <td>
+                        {% for symptom in disease.symptoms.all %}
+                        <span class="badge bg-info">{{ symptom.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if disease.severity == 'low' %}
+                        <span class="badge bg-success">Nhẹ</span>
+                        {% elif disease.severity == 'medium' %}
+                        <span class="badge bg-warning">Trung bình</span>
+                        {% else %}
+                        <span class="badge bg-danger">Nặng</span>
+                        {% endif %}
+                    </td>
+                    {% if user.is_staff %}
+                    <td>
+                        <a href="{% url 'diagnosis:disease_edit' disease.id %}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-sm btn-danger delete-disease" data-bs-toggle="modal"
+                                data-bs-target="#deleteDiseaseModal" data-id="{{ disease.id }}"
+                                data-name="{{ disease.name }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Chưa có bệnh nào</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Disease Modal -->
+<div class="modal fade" id="addDiseaseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm bệnh mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Tên bệnh</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Triệu chứng <span class="text-muted fw-bold">(Chọn một hoặc nhiều triệu chứng)</span></label>
+                        <div class="border p-3 rounded bg-light" style="max-height: 200px; overflow-y: auto;">
+                            <div class="alert alert-info py-2">
+                                <small><i class="fas fa-info-circle"></i> Bạn có thể chọn nhiều triệu chứng bằng cách nhấn vào các ô vuông tương ứng.</small>
+                            </div>
+                            <div class="row">
+                                {% for choice in form.symptoms %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ choice }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if form.symptoms.errors %}
+                        <div class="text-danger mt-2">
+                            {{ form.symptoms.errors }}
+                        </div>
+                        {% endif %}
+                        <div class="mt-2 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllSymptomsModal">
+                                <i class="fas fa-check-square"></i> Chọn tất cả
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllSymptomsModal">
+                                <i class="fas fa-square"></i> Bỏ chọn tất cả
+                            </button>
+                            <span class="ms-2 form-text text-muted" id="selectedCountModal">0 triệu chứng được chọn</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.severity.id_for_label }}" class="form-label">Mức độ nghiêm trọng</label>
+                        {{ form.severity }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.treatment_guidelines.id_for_label }}" class="form-label">Hướng dẫn điều trị</label>
+                        {{ form.treatment_guidelines }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Disease Modal -->
+<div class="modal fade" id="deleteDiseaseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="disease_id" id="delete_disease_id">
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa bệnh "<span id="delete_disease_name"></span>"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cập nhật số lượng triệu chứng được chọn ban đầu trong modal
+    updateSelectedCountModal();
+    
+    // Delete disease
+    document.querySelectorAll('.delete-disease').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            
+            document.getElementById('delete_disease_id').value = id;
+            document.getElementById('delete_disease_name').textContent = name;
+        });
+    });
+    
+    // Xử lý nút chọn tất cả trong modal
+    document.getElementById('selectAllSymptomsModal').addEventListener('click', function() {
+        document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCountModal();
+    });
+    
+    // Xử lý nút bỏ chọn tất cả trong modal
+    document.getElementById('deselectAllSymptomsModal').addEventListener('click', function() {
+        document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCountModal();
+    });
+    
+    // Cập nhật khi checkbox thay đổi trong modal
+    document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedCountModal();
+        });
+    });
+    
+    // Hàm cập nhật hiển thị số lượng triệu chứng đã chọn trong modal
+    function updateSelectedCountModal() {
+        const count = document.querySelectorAll('#addDiseaseModal input[name="symptoms"]:checked').length;
+        document.getElementById('selectedCountModal').textContent = count + ' triệu chứng được chọn';
+    }
+    
+    // Đảm bảo cập nhật khi modal mở
+    document.getElementById('addDiseaseModal').addEventListener('shown.bs.modal', function() {
+        updateSelectedCountModal();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 
