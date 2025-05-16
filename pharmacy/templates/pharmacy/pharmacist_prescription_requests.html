@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý yêu cầu kê đơn thuốc{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i> Quản lý yêu cầu kê đơn thuốc
+                    </h5>
+                    <div>
+                        <a href="{% url 'pharmacy:dashboard' %}" class="btn btn-sm btn-light">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        <div class="messages mb-4">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Debug info block - Only visible to staff -->
+                    {% if user.is_staff or user.is_admin %}
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">Thông tin debug:</h6>
+                            <p class="mb-1">Tổng số yêu cầu trong DB: {{ total_requests }}</p>
+                            <p class="mb-1">Chờ xử lý: {{ pending_requests }}</p>
+                            <p class="mb-1">Đã duyệt: {{ approved_requests }}</p>
+                            <p class="mb-1">Đã hoàn thành: {{ completed_requests }}</p>
+                            <p class="mb-1">Đã từ chối: {{ rejected_requests|default:'0' }}</p>
+                            <p class="mb-1">Bộ lọc hiện tại: {{ status_filter }}</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Cards thống kê -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-light text-dark">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                        <i class="fas fa-clipboard-list text-primary fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Tổng số yêu cầu</h6>
+                                        <h4 class="mb-0">{{ total_requests }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light text-dark">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                                        <i class="fas fa-hourglass-half text-warning fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Chờ xử lý</h6>
+                                        <h4 class="mb-0">{{ pending_requests }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light text-dark">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                                        <i class="fas fa-thumbs-up text-info fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Đã duyệt</h6>
+                                        <h4 class="mb-0">{{ approved_requests }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light text-dark">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                                        <i class="fas fa-check-circle text-success fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Đã hoàn thành</h6>
+                                        <h4 class="mb-0">{{ completed_requests }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bộ lọc -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Lọc theo trạng thái:</h6>
+                                <div class="btn-group" role="group">
+                                    <a href="?status=all" class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        Tất cả
+                                    </a>
+                                    <a href="?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        Chờ xử lý
+                                    </a>
+                                    <a href="?status=approved" class="btn btn-sm {% if status_filter == 'approved' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        Đã duyệt
+                                    </a>
+                                    <a href="?status=rejected" class="btn btn-sm {% if status_filter == 'rejected' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        Đã từ chối
+                                    </a>
+                                    <a href="?status=completed" class="btn btn-sm {% if status_filter == 'completed' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                        Đã hoàn thành
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if total_requests > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Ngày tạo</th>
+                                        <th scope="col">Bệnh nhân</th>
+                                        <th scope="col">Bệnh</th>
+                                        <th scope="col">Thuốc khuyến nghị</th>
+                                        <th scope="col">Trạng thái</th>
+                                        <th scope="col" style="width: 150px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in prescription_requests %}
+                                        <tr>
+                                            <td>{{ request.id }}</td>
+                                            <td>{{ request.created_at|date:"d/m/Y H:i" }}</td>
+                                            <td>{{ request.patient.get_full_name|default:request.patient.username }}</td>
+                                            <td>{{ request.disease }}</td>
+                                            <td>{{ request.recommended_drug|truncatechars:50 }}</td>
+                                            <td>
+                                                {% if request.status == 'pending' %}
+                                                    <span class="badge bg-warning">Chờ xử lý</span>
+                                                {% elif request.status == 'approved' %}
+                                                    <span class="badge bg-info">Đã duyệt</span>
+                                                {% elif request.status == 'rejected' %}
+                                                    <span class="badge bg-danger">Đã từ chối</span>
+                                                {% elif request.status == 'completed' %}
+                                                    <span class="badge bg-success">Đã hoàn thành</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'pharmacy:prescription_request_detail' pk=request.id %}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if request.status == 'pending' %}
+                                                    <form method="post" action="{% url 'pharmacy:approve_prescription_request' pk=request.id %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                    <a href="{% url 'pharmacy:reject_prescription_request' pk=request.id %}" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-times"></i>
+                                                    </a>
+                                                {% endif %}
+                                                {% if request.status == 'completed' and request.prescription %}
+                                                    <a href="{% url 'pharmacy:prescription_detail' pk=request.prescription.id %}" class="btn btn-sm btn-info">
+                                                        <i class="fas fa-prescription"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Phân trang -->
+                        {% if page_obj.has_other_pages %}
+                            <nav aria-label="Phân trang">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1&status={{ status_filter }}">Đầu</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}">Trước</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link">Đầu</a>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <a class="page-link">Trước</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for i in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == i %}
+                                            <li class="page-item active">
+                                                <a class="page-link">{{ i }}</a>
+                                            </li>
+                                        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ i }}&status={{ status_filter }}">{{ i }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}">Sau</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}">Cuối</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link">Sau</a>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <a class="page-link">Cuối</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle me-2 fa-lg"></i> 
+                            {% if status_filter == 'pending' %}
+                                <p class="mb-2 fw-bold">Không có yêu cầu nào đang chờ xử lý.</p>
+                            {% elif status_filter == 'approved' %}
+                                <p class="mb-2 fw-bold">Không có yêu cầu nào đã được duyệt.</p>
+                            {% elif status_filter == 'rejected' %}
+                                <p class="mb-2 fw-bold">Không có yêu cầu nào đã bị từ chối.</p>
+                            {% elif status_filter == 'completed' %}
+                                <p class="mb-2 fw-bold">Không có yêu cầu nào đã hoàn thành.</p>
+                            {% else %}
+                                <p class="mb-2 fw-bold">Không có yêu cầu kê đơn thuốc nào.</p>
+                                {% if total_requests > 0 %}
+                                    <div class="alert alert-warning mt-3">
+                                        <p class="mb-1 fw-bold">LƯU Ý: Có {{ total_requests }} yêu cầu trong cơ sở dữ liệu nhưng không hiển thị!</p>
+                                        <p>Điều này có thể là do lỗi hiển thị. Vui lòng liên hệ quản trị viên hệ thống.</p>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <p>Yêu cầu kê đơn thuốc sẽ xuất hiện khi bệnh nhân tạo yêu cầu từ kết quả khuyến nghị thuốc.</p>
+                            <p class="mt-3">
+                                <a href="{% url 'pharmacy:dashboard' %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-home me-1"></i> Quay lại Trang chủ
+                                </a>
+                                {% if user.is_staff or user.is_admin %}
+                                    <a href="javascript:location.reload();" class="btn btn-sm btn-outline-secondary ms-2">
+                                        <i class="fas fa-sync-alt me-1"></i> Tải lại trang
+                                    </a>
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

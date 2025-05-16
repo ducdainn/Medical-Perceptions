@@ -1,69 +1,142 @@
 import json
+import requests
+import asyncio
+import aiohttp
+import random
+import re
+import os
+from dotenv import load_dotenv
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from .models import ChatSession, Message, Intent, Response
-import random
+from diagnosis.models import Symptom, Disease, Diagnosis
+from pharmacy.models import Medicine, Drug
+
+# Load environment variables
+load_dotenv()
+
+# Gemini API configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCEua2hrKMgAe_8qcawIXwVGNA7dV39BdA")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        if self.scope["user"].is_anonymous:
-            await self.close()
-        else:
+        """
+        Called when a WebSocket connection is established
+        """
+        print(f"WebSocket connection attempt from: {self.scope['client']}")
+        
+        try:
+            # Accept the connection
             await self.accept()
-            self.session = await self.create_chat_session()
+            print(f"WebSocket connection accepted from: {self.scope['client']}")
+            
+            # Send a welcome message
+            await self.send(text_data=json.dumps({
+                'message': 'Chào mừng bạn đến với hệ thống tin nhắn ReViCARE! Kết nối WebSocket đã thành công.',
+                'type': 'bot'
+            }))
+        except Exception as e:
+            print(f"Error during WebSocket connection: {str(e)}")
+            try:
+                await self.send(text_data=json.dumps({
+                    'message': f'Lỗi kết nối: {str(e)}',
+                    'type': 'error'
+                }))
+            except Exception as inner_e:
+                print(f"Error sending error message: {str(inner_e)}")
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'session'):
-            await self.end_chat_session()
+        """
+        Called when the WebSocket closes
+        """
+        print(f"WebSocket connection closed with code: {close_code} from: {self.scope['client']}")
 
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        # Lưu tin nhắn của người dùng
-        await self.save_message('user', message)
-
-        # Xử lý tin nhắn và tạo phản hồi
-        response = await self.process_message(message)
-
-        # Lưu và gửi phản hồi
-        await self.save_message('bot', response)
-        await self.send(text_data=json.dumps({
-            'message': response,
-            'type': 'bot'
-        }))
-
-    @database_sync_to_async
-    def create_chat_session(self):
-        return ChatSession.objects.create(user=self.scope["user"])
-
-    @database_sync_to_async
-    def end_chat_session(self):
-        self.session.status = 'closed'
-        self.session.ended_at = timezone.now()
-        self.session.save()
-
-    @database_sync_to_async
-    def save_message(self, msg_type, content):
-        return Message.objects.create(
-            session=self.session,
-            type=msg_type,
-            content=content
-        )
-
-    @database_sync_to_async
-    def get_response(self, intent_name):
+        """
+        Called when we receive a message from the client
+        """
+        print(f"Received message from client {self.scope['client']}")
+        
         try:
-            intent = Intent.objects.get(name=intent_name)
-            responses = Response.objects.filter(intent=intent)
-            if responses.exists():
-                return random.choice(responses).content
-        except Intent.DoesNotExist:
-            pass
-        return "Xin lỗi, tôi không hiểu ý của bạn. Bạn có thể nói rõ hơn được không?"
+            # Parse the JSON message
+            text_data_json = json.loads(text_data)
+            message = text_data_json.get('message', '')
+            session_id = text_data_json.get('session_id')
+            use_gemini = text_data_json.get('use_gemini', False)
+            
+            if not message:
+                await self.send(text_data=json.dumps({
+                    'message': 'Tin nhắn trống, vui lòng gửi nội dung.',
+                    'type': 'bot',
+                    'status': 'error'
+                }))
+                return
+            
+            # Log the received message
+            print(f"Processing message: {message}")
+            
+            # Save user message to database if session_id exists
+            if session_id:
+                try:
+                    await self.save_message_to_db(session_id, 'user', message)
+                except Exception as e:
+                    print(f"Error saving user message to database: {str(e)}")
+                    
+            # Save a notification message for web managers to respond
+            if session_id:
+                try:
+                    response_message = "Tin nhắn của bạn đã được ghi nhận. Nhân viên quản lý sẽ phản hồi trong thời gian sớm nhất. Cảm ơn bạn đã sử dụng dịch vụ tin nhắn của ReViCARE."
+                    await self.save_message_to_db(session_id, 'bot', response_message)
+                    
+                    # Send response to client
+                    await self.send(text_data=json.dumps({
+                        'message': response_message,
+                        'type': 'bot',
+                        'status': 'success'
+                    }))
+                except Exception as e:
+                    error_message = f"Xin lỗi, đã xảy ra lỗi khi lưu tin nhắn: {str(e)}"
+                    print(error_message)
+                    await self.send(text_data=json.dumps({
+                        'message': error_message,
+                        'type': 'bot',
+                        'status': 'error'
+                    }))
+            
+        except Exception as e:
+            error_message = f"Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn: {str(e)}"
+            print(error_message)
+            await self.send(text_data=json.dumps({
+                'message': error_message,
+                'type': 'bot',
+                'status': 'error'
+            }))
+    
+    @database_sync_to_async
+    def save_message_to_db(self, session_id, message_type, content):
+        """
+        Save a message to the database
+        """
+        try:
+            session = ChatSession.objects.get(id=session_id)
+            Message.objects.create(
+                session=session,
+                type=message_type,
+                content=content
+            )
+            return True
+        except Exception as e:
+            print(f"Error saving message to DB: {str(e)}")
+            raise e
 
-    async def process_message(self, message):
-        # TODO: Implement NLP processing here
-        # Tạm thời trả về câu trả lời mặc định
-        return await self.get_response('default') 
+    @database_sync_to_async
+    def get_user_diagnoses(self, user):
+        """
+        Get recent diagnoses for a user
+        """
+        from diagnosis.models import Diagnosis
+        return list(Diagnosis.objects.filter(user=user).order_by('-created_at')[:5])
+
+    # Add the rest of your methods here... 

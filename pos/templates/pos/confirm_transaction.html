@@ -83,16 +83,6 @@
                             </div>
                             {% endif %}
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.cashier.id_for_label }}" class="form-label">Thu ngân</label>
-                            {{ form.cashier }}
-                            {% if form.cashier.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.cashier.errors }}
-                            </div>
-                            {% endif %}
-                        </div>
                     </div>
                     
                     <div class="col-md-6">
@@ -239,6 +229,7 @@
 <script>
     // Styling form elements
     document.addEventListener('DOMContentLoaded', function() {
+        // Apply form-control class to all form controls
         const formElements = document.querySelectorAll('input, select, textarea');
         formElements.forEach(el => {
             if (!el.classList.contains('form-check-input') && !el.classList.contains('btn')) {
@@ -246,12 +237,15 @@
             }
         });
         
-        // Handle medicine selection and price updating
+        // Initialize the medicine price API
+        function initializeMedicinePrice() {
         const medicineSelects = document.querySelectorAll('select[name$="-medicine"]');
         medicineSelects.forEach(select => {
             select.addEventListener('change', updatePrice);
         });
+        }
         
+        // Update price based on selected medicine
         function updatePrice(e) {
             const medicineId = e.target.value;
             if (!medicineId) return;
@@ -270,9 +264,8 @@
                 })
                 .catch(error => console.error('Error fetching price:', error));
         }
-    });
     
-    // Formset handling
+        // Initialize formset related variables
     const addButton = document.getElementById('add-form');
     const formsetContainer = document.getElementById('formset-container');
     const emptyForm = document.getElementById('empty-form');
@@ -281,7 +274,7 @@
     // Set initial form count
     let formCount = parseInt(totalFormsInput.value);
     
-    // Add new form
+        // Add a form item handler
     addButton.addEventListener('click', () => {
         const newForm = emptyForm.cloneNode(true);
         newForm.classList.remove('empty-form');
@@ -307,29 +300,17 @@
         // Add event listener for medicine select
         const medicineSelect = newForm.querySelector('select[name$="-medicine"]');
         if (medicineSelect) {
-            medicineSelect.addEventListener('change', function(e) {
-                const medicineId = e.target.value;
-                if (!medicineId) return;
-                
-                const itemContainer = e.target.closest('.formset-item');
-                const priceInput = itemContainer.querySelector('input[name$="-unit_price"]');
-                
-                fetch(`/pos/api/medicine-price/?medicine_id=${medicineId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.price) {
-                            priceInput.value = data.price;
-                        }
-                    })
-                    .catch(error => console.error('Error fetching price:', error));
-            });
-        }
-    });
-    
-    // Add event listeners to existing forms
+                medicineSelect.addEventListener('change', updatePrice);
+            }
+        });
+        
+        // Initialize all existing form items
     document.querySelectorAll('.formset-item:not(#empty-form)').forEach(form => {
         addFormEventListeners(form);
     });
+        
+        // Initialize medicine price functionality
+        initializeMedicinePrice();
     
     // Helper function to add event listeners to a form
     function addFormEventListeners(form) {
@@ -337,24 +318,59 @@
         const removeButton = form.querySelector('.remove-form');
         if (removeButton) {
             removeButton.addEventListener('click', () => {
+                    // Confirm deletion
                 if (confirm('Bạn có chắc muốn xóa mục này?')) {
-                    form.remove();
-                    
                     // If this form has a DELETE input, mark it as deleted
                     const deleteInput = form.querySelector('input[name$="-DELETE"]');
                     if (deleteInput) {
                         deleteInput.value = 'on';
                         // Hide the form instead of removing it
                         form.style.display = 'none';
-                    }
-                    
+                        } else {
                     // Otherwise just remove the form from the DOM
-                    else {
-                        form.remove();
+                            form.remove();
+                            
+                            // Update form count (important for validation)
+                            const visibleForms = document.querySelectorAll('.formset-item:not(#empty-form):not([style*="display: none"])').length;
+                            totalFormsInput.value = visibleForms.toString();
+                        }
                     }
+                });
+            }
+        }
+        
+        // Ensure the form is not submitted if there are no items
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const visibleItems = document.querySelectorAll('.formset-item:not(#empty-form):not([style*="display: none"])');
+            
+            // Check if there are any visible items
+            if (visibleItems.length === 0) {
+                e.preventDefault();
+                alert('Bạn cần thêm ít nhất một mặt hàng để xác nhận giao dịch.');
+                return;
+            }
+            
+            // Check if each visible item has a medicine selected
+            let hasValidItems = false;
+            visibleItems.forEach(item => {
+                const medicineSelect = item.querySelector('select[name$="-medicine"]');
+                const quantityInput = item.querySelector('input[name$="-quantity"]');
+                const unitInput = item.querySelector('input[name$="-unit"]');
+                const priceInput = item.querySelector('input[name$="-unit_price"]');
+                
+                if (medicineSelect && medicineSelect.value && 
+                    quantityInput && quantityInput.value > 0 &&
+                    unitInput && unitInput.value &&
+                    priceInput && priceInput.value > 0) {
+                    hasValidItems = true;
                 }
             });
+            
+            if (!hasValidItems) {
+                e.preventDefault();
+                alert('Vui lòng chọn thuốc, nhập số lượng, đơn vị và đơn giá hợp lệ cho ít nhất một mặt hàng.');
         }
-    }
+        });
+    });
 </script>
 {% endblock %} 

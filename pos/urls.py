@@ -10,6 +10,7 @@ urlpatterns = [
     path('sales/<int:pk>/', views.sale_detail, name='sale_detail'),
     path('sales/<int:pk>/edit/', views.sale_edit, name='sale_edit'),
     path('sales/<int:pk>/delete/', views.sale_delete, name='sale_delete'),
+    path('sales/<int:pk>/update-status/', views.update_sale_status, name='update_sale_status'),
     path('api/medicine-price/', views.medicine_price_api, name='medicine_price_api'),
     path('transactions/', views.transaction_list, name='transaction_list'),
 ] 

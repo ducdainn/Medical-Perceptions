@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Đăng ký tài khoản{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Đăng ký tài khoản - Bước 1/2</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="progress mb-4" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">Bước 1/2</div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i> Vui lòng nhập thông tin đăng nhập cơ bản. Bạn sẽ điền thông tin cá nhân ở bước tiếp theo.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                            {{ form.username }}
+                            {% if form.username.help_text %}
+                            <small class="form-text text-muted">{{ form.username.help_text }}</small>
+                            {% endif %}
+                            {% if form.username.errors %}
+                            <div class="text-danger">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.help_text %}
+                            <small class="form-text text-muted">{{ form.email.help_text }}</small>
+                            {% endif %}
+                            {% if form.email.errors %}
+                            <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                            {{ form.password1 }}
+                            <small class="form-text text-muted">
+                                <ul>
+                                    <li>Mật khẩu phải chứa ít nhất 8 ký tự.</li>
+                                    <li>Mật khẩu không được chứa toàn số.</li>
+                                </ul>
+                            </small>
+                            {% if form.password1.errors %}
+                            <div class="text-danger">{{ form.password1.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                            {{ form.password2 }}
+                            {% if form.password2.help_text %}
+                            <small class="form-text text-muted">{{ form.password2.help_text }}</small>
+                            {% endif %}
+                            {% if form.password2.errors %}
+                            <div class="text-danger">{{ form.password2.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-arrow-right me-2"></i> Tiếp tục
+                            </button>
+                        </div>
+                    </form>
+                    <hr>
+                    <div class="text-center">
+                        <p>Đã có tài khoản? <a href="{% url 'accounts:login' %}">Đăng nhập</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if the form is rendered properly
+    const formFields = document.querySelectorAll('form input');
+    console.log('Form fields detected:', formFields.length);
+    
+    // Add event listener to submit button
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            console.log('Submit button clicked');
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,918 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bảng Điều Khiển Người Dùng - ReViCARE{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        border: none;
+        border-radius: 10px;
+        transition: transform 0.3s, box-shadow 0.3s;
+        height: 100%;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .welcome-header {
+        background: linear-gradient(135deg, #0061ff 0%, #60efff 100%);
+        border-radius: 10px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-header {
+        position: relative;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .section-header:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -8px;
+        height: 3px;
+        width: 50px;
+        background: #0061ff;
+    }
+    
+    .card-title {
+        font-weight: 600;
+    }
+    
+    .btn-feature {
+        border-radius: 50px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-feature:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-card {
+        padding: 16px;
+        border-radius: 10px;
+        color: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .stats-card .stats-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card .stats-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(45deg, #0061ff 0%, #60efff 100%);
+        box-shadow: 0 5px 15px rgba(0, 97, 255, 0.2);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(45deg, #1cc88a 0%, #20bf55 100%);
+        box-shadow: 0 5px 15px rgba(28, 200, 138, 0.2);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(45deg, #36b9cc 0%, #01baef 100%);
+        box-shadow: 0 5px 15px rgba(54, 185, 204, 0.2);
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(45deg, #f6c23e 0%, #ffa501 100%);
+        box-shadow: 0 5px 15px rgba(246, 194, 62, 0.2);
+    }
+    
+    .bg-gradient-danger {
+        background: linear-gradient(45deg, #e74a3b 0%, #ff5757 100%);
+        box-shadow: 0 5px 15px rgba(231, 74, 59, 0.2);
+    }
+    
+    .health-tip {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0061ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .health-tip:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .activity-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.2rem;
+    }
+    
+    .user-role-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 50px;
+        margin-left: 10px;
+    }
+    
+    .system-stat {
+        height: 5px;
+        border-radius: 5px;
+        background-color: #e9ecef;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+    
+    .system-stat-bar {
+        height: 100%;
+        border-radius: 5px;
+    }
+    
+    /* Pattern background fix */
+    .pattern-bg-section {
+        background-color: #f8f9fa !important;
+        background-image: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="welcome-header fade-in">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <i class="fas fa-user-circle fa-3x"></i>
+            </div>
+            <div class="col">
+                <div class="d-flex align-items-center">
+                    <h2 class="mb-0">Xin chào, {{ request.user.get_full_name|default:request.user.username }}</h2>
+                    {% if request.user.is_doctor %}
+                        <span class="user-role-badge bg-info text-white">Bác sĩ</span>
+                    {% elif request.user.is_pharmacist %}
+                        <span class="user-role-badge bg-success text-white">Dược sĩ</span>
+                    {% elif request.user.is_web_manager %}
+                        <span class="user-role-badge bg-primary text-white">Quản lý website</span>
+                    {% else %}
+                        <span class="user-role-badge bg-secondary text-white">Bệnh nhân</span>
+                    {% endif %}
+                </div>
+                <p class="mb-0 opacity-75">Chào mừng bạn đến với ReViCARE</p>
+            </div>
+            <div class="col-auto ms-auto">
+                <div class="d-flex">
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-light me-2">
+                        <i class="fas fa-user-edit me-1"></i>Hồ sơ cá nhân
+                    </a>
+                    <a href="{% url 'home' %}" class="btn btn-sm btn-light">
+                        <i class="fas fa-home me-1"></i>Trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-primary fade-in">
+                <div>
+                    <i class="fas fa-user-md stats-icon"></i>
+                    <div class="stats-value">Hồ sơ y tế</div>
+                </div>
+                <div class="stats-label">
+                    <a href="{% url 'accounts:profile' %}" class="text-white text-decoration-none">Xem chi tiết <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-success fade-in">
+                <div>
+                    <i class="fas fa-comments stats-icon"></i>
+                    <div class="stats-value">Tư vấn</div>
+                </div>
+                <div class="stats-label">
+                    <a href="{% url 'chatbot:chat' %}" class="text-white text-decoration-none">Bắt đầu chat <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-warning fade-in">
+                <div>
+                    <i class="fas fa-clipboard-list stats-icon"></i>
+                    <div class="stats-value">Chẩn đoán</div>
+                </div>
+                <div class="stats-label">
+                    <a href="{% url 'diagnosis:list' %}" class="text-white text-decoration-none">Xem lịch sử <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-danger fade-in">
+                <div>
+                    <i class="fas fa-pills stats-icon"></i>
+                    <div class="stats-value">Đơn thuốc</div>
+                </div>
+                <div class="stats-label">
+                    <a href="{% url 'pharmacy:prescription_list' %}" class="text-white text-decoration-none">Xem đơn thuốc <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Health Tips -->
+    <h4 class="section-header">Lời khuyên sức khỏe</h4>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="dashboard-card card bg-white">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Lời khuyên sức khỏe hôm nay</h5>
+                        <a href="#" class="btn btn-sm btn-link text-decoration-none">Xem thêm</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0">Uống đủ 2 lít nước mỗi ngày giúp tăng cường sức khỏe, cải thiện tiêu hóa và giữ da luôn căng mịn.</p>
+                                <small class="text-muted">Thể dục & Dinh dưỡng</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-success text-white p-2 me-3">
+                                <i class="fas fa-apple-alt"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0">Tăng cường rau xanh và trái cây trong bữa ăn hàng ngày để cung cấp đủ vitamin và khoáng chất cần thiết.</p>
+                                <small class="text-muted">Chế độ ăn uống</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-warning text-white p-2 me-3">
+                                <i class="fas fa-walking"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0">Đi bộ ít nhất 30 phút mỗi ngày có thể giảm nguy cơ bệnh tim mạch và cải thiện sức khỏe tinh thần.</p>
+                                <small class="text-muted">Vận động hàng ngày</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="dashboard-card card bg-white h-100">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Tình trạng sức khỏe</h5>
+                        <span class="badge bg-success">Tốt</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">Chỉ số BMI</span>
+                            <span class="small text-muted">22.5</span>
+                        </div>
+                        <div class="system-stat">
+                            <div class="system-stat-bar bg-success" style="width: 72%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">Huyết áp</span>
+                            <span class="small text-muted">120/80 mmHg</span>
+                        </div>
+                        <div class="system-stat">
+                            <div class="system-stat-bar bg-primary" style="width: 85%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">Đường huyết</span>
+                            <span class="small text-muted">5.5 mmol/L</span>
+                        </div>
+                        <div class="system-stat">
+                            <div class="system-stat-bar bg-info" style="width: 78%"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Khám sức khỏe gần nhất</span>
+                        <span class="badge bg-light text-dark">15 ngày trước</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Chỉ số sức khỏe tổng quát</span>
+                        <span class="badge bg-success">87/100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard -->
+    <h4 class="section-header">Tính năng chính</h4>
+    <div class="row g-4">
+        {% if not request.user.is_doctor and not request.user.is_pharmacist and not request.user.is_web_manager %}
+        <!-- Patient Dashboard -->
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                                <i class="fas fa-stethoscope text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Đặt lịch khám</h5>
+                            <p class="card-text text-muted small mb-2">Đặt lịch khám với bác sĩ để được tư vấn và chẩn đoán kịp thời</p>
+                            <a href="#" class="btn btn-sm btn-outline-primary">Đặt lịch ngay</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                                <i class="fas fa-pills text-success"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Đơn thuốc của tôi</h5>
+                            <p class="card-text text-muted small mb-2">Xem lại đơn thuốc đã được kê và hướng dẫn sử dụng</p>
+                            <a href="{% url 'pharmacy:prescription_list' %}" class="btn btn-sm btn-outline-success">Xem đơn thuốc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                                <i class="fas fa-notes-medical text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Lịch sử khám bệnh</h5>
+                            <p class="card-text text-muted small mb-2">Xem lại các lần khám bệnh và chẩn đoán trước đây</p>
+                            <a href="{% url 'diagnosis:list' %}" class="btn btn-sm btn-outline-warning">Xem lịch sử</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                                <i class="fas fa-comment-medical text-info"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Hỏi đáp nhanh</h5>
+                            <p class="card-text text-muted small mb-2">Đặt câu hỏi cho đội ngũ y tế và nhận câu trả lời nhanh chóng</p>
+                            <a href="{% url 'chatbot:chat' %}" class="btn btn-sm btn-outline-info">Đặt câu hỏi</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-12">
+            <div class="dashboard-card card bg-white mt-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Lịch sử hoạt động gần đây</h5>
+                        <a href="#" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Khám bệnh với Bác sĩ Nguyễn Văn A</p>
+                                <small class="text-muted">2 ngày trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-success text-white p-2 me-3">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Nhận đơn thuốc mới</p>
+                                <small class="text-muted">3 ngày trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-info text-white p-2 me-3">
+                                <i class="fas fa-comment-medical"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Hỏi đáp với trợ lý ảo về triệu chứng cảm cúm</p>
+                                <small class="text-muted">5 ngày trước</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if request.user.is_doctor %}
+        <!-- Doctor Dashboard -->
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                                <i class="fas fa-user-injured text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Danh sách bệnh nhân</h5>
+                            <p class="card-text text-muted small mb-2">Quản lý danh sách bệnh nhân của bạn và lịch sử khám</p>
+                            <a href="#" class="btn btn-sm btn-outline-primary">Xem danh sách</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                                <i class="fas fa-file-prescription text-success"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Tạo đơn thuốc mới</h5>
+                            <p class="card-text text-muted small mb-2">Kê đơn thuốc mới cho bệnh nhân sau khi khám và chẩn đoán</p>
+                            <a href="{% url 'pharmacy:prescription_create' %}" class="btn btn-sm btn-outline-success">Tạo đơn thuốc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                                <i class="fas fa-diagnoses text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Tạo chẩn đoán mới</h5>
+                            <p class="card-text text-muted small mb-2">Tạo chẩn đoán mới cho bệnh nhân sau khi khám</p>
+                            <a href="{% url 'diagnosis:create' %}" class="btn btn-sm btn-outline-warning">Tạo chẩn đoán</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                                <i class="fas fa-calendar-check text-info"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Lịch khám</h5>
+                            <p class="card-text text-muted small mb-2">Xem và quản lý lịch khám của bạn trong tuần</p>
+                            <a href="#" class="btn btn-sm btn-outline-info">Xem lịch khám</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-12">
+            <div class="dashboard-card card bg-white mt-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Bệnh nhân gần đây</h5>
+                        <a href="#" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Nguyễn Văn A - 35 tuổi</p>
+                                    <small class="text-muted">Chẩn đoán: Viêm họng cấp</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Trần Thị B - 42 tuổi</p>
+                                    <small class="text-muted">Chẩn đoán: Viêm xoang</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Lê Văn C - 28 tuổi</p>
+                                    <small class="text-muted">Chẩn đoán: Cảm cúm</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if request.user.is_pharmacist %}
+        <!-- Pharmacist Dashboard -->
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                                <i class="fas fa-pills text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Quản lý thuốc</h5>
+                            <p class="card-text text-muted small mb-2">Quản lý kho thuốc, thêm/sửa/xóa thông tin thuốc</p>
+                            <a href="{% url 'pharmacy:medicine_list' %}" class="btn btn-sm btn-outline-primary">Quản lý thuốc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                                <i class="fas fa-file-prescription text-success"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Xử lý đơn thuốc</h5>
+                            <p class="card-text text-muted small mb-2">Xem và xử lý đơn thuốc từ bác sĩ cho bệnh nhân</p>
+                            <a href="{% url 'pharmacy:prescription_list' %}" class="btn btn-sm btn-outline-success">Xem đơn thuốc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                                <i class="fas fa-boxes text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Kiểm tra kho</h5>
+                            <p class="card-text text-muted small mb-2">Kiểm tra tình trạng kho và thuốc sắp hết hàng</p>
+                            <a href="{% url 'pharmacy:inventory' %}" class="btn btn-sm btn-outline-warning">Kiểm tra kho</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                                <i class="fas fa-cash-register text-info"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Bán hàng</h5>
+                            <p class="card-text text-muted small mb-2">Tạo đơn hàng và thanh toán cho khách hàng</p>
+                            <a href="{% url 'pos:sale_list' %}" class="btn btn-sm btn-outline-info">Bán hàng</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-12">
+            <div class="dashboard-card card bg-white mt-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Thuốc sắp hết hàng</h5>
+                        <a href="{% url 'pharmacy:inventory' %}" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-danger text-white p-2 me-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Paracetamol 500mg</p>
+                                    <small class="text-danger">Còn lại: 10 hộp</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-danger">Đặt thêm</a>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-warning text-white p-2 me-3">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Amoxicillin 250mg</p>
+                                    <small class="text-warning">Còn lại: 25 hộp</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-warning">Đặt thêm</a>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-warning text-white p-2 me-3">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-grow-1">
+                                <div>
+                                    <p class="mb-0 small">Vitamin C 1000mg</p>
+                                    <small class="text-warning">Còn lại: 30 hộp</small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-warning">Đặt thêm</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if request.user.is_web_manager %}
+        <!-- Web Manager Dashboard -->
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                                <i class="fas fa-pills text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Quản lý thuốc</h5>
+                            <p class="card-text text-muted small mb-2">Thêm, sửa, xóa thuốc trong hệ thống</p>
+                            <a href="{% url 'pharmacy:medicine_list' %}" class="btn btn-sm btn-outline-primary">Quản lý thuốc</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                                <i class="fas fa-virus text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Quản lý bệnh</h5>
+                            <p class="card-text text-muted small mb-2">Thêm, sửa, xóa bệnh và triệu chứng</p>
+                            <a href="{% url 'diagnosis:diseases' %}" class="btn btn-sm btn-outline-danger">Quản lý bệnh</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                                <i class="fas fa-hand-holding-usd text-success"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Quản lý tài chính</h5>
+                            <p class="card-text text-muted small mb-2">Xem báo cáo tài chính và quản lý giao dịch</p>
+                            <a href="{% url 'finance:report_list' %}" class="btn btn-sm btn-outline-success">Quản lý tài chính</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                                <i class="fas fa-comments text-info"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="card-title mb-1">Quản lý chat</h5>
+                            <p class="card-text text-muted small mb-2">Xem và phản hồi tin nhắn từ người dùng</p>
+                            <a href="{% url 'chatbot:admin_chat_list' %}" class="btn btn-sm btn-outline-info">Quản lý chat</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-12">
+            <div class="dashboard-card card bg-white mt-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Hoạt động hệ thống</h5>
+                        <a href="#" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Đăng ký người dùng mới: Nguyễn Văn A</p>
+                                <small class="text-muted">1 giờ trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-success text-white p-2 me-3">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Thêm mới 5 sản phẩm thuốc</p>
+                                <small class="text-muted">3 giờ trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-danger text-white p-2 me-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Cảnh báo: 3 loại thuốc sắp hết hạn</p>
+                                <small class="text-muted">1 ngày trước</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add animation when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card, .stats-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('fade-in');
+            }, 100 * index);
+        });
+        
+        // Animate stats bars
+        const statBars = document.querySelectorAll('.system-stat-bar');
+        setTimeout(() => {
+            statBars.forEach(bar => {
+                bar.style.transition = 'width 1.5s ease-in-out';
+            });
+        }, 300);
+        
+        // Pulse effect on value cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        setInterval(() => {
+            statsCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('pulse');
+                    setTimeout(() => {
+                        card.classList.remove('pulse');
+                    }, 1000);
+                }, index * 200);
+            });
+        }, 10000);
+    });
+</script>
+<style>
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.02);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    
+    .pulse {
+        animation: pulse 1s ease-in-out;
+    }
+    
+    .dashboard-card, .stats-card {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    
+    .fade-in {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+{% endblock %} 

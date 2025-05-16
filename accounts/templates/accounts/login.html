@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Đăng nhập{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+    }
+    
+    .login-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .login-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, #1e88e5 0%, #0062cc 100%);
+        padding: 1.5rem;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .login-body {
+        padding: 2.5rem;
+    }
+    
+    .form-control {
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(30, 136, 229, 0.25);
+        border-color: #1e88e5;
+        background-color: #fff;
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, #1e88e5 0%, #0062cc 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 98, 204, 0.3);
+    }
+    
+    .social-login {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .social-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 10px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .social-btn:hover {
+        transform: translateY(-3px);
+    }
+    
+    .google-btn {
+        background-color: #DB4437;
+    }
+    
+    .facebook-btn {
+        background-color: #4267B2;
+    }
+    
+    .register-link {
+        color: #1e88e5;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .register-link:hover {
+        color: #0062cc;
+        text-decoration: none;
+    }
+    
+    .login-footer {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .login-animation {
+        animation: fadeIn 0.8s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container login-container">
+    <div class="row justify-content-center w-100">
+        <div class="col-lg-5 col-md-7 col-sm-10">
+            <div class="card login-card login-animation">
+                <div class="login-header text-center text-white">
+                    <h3 class="mb-0"><i class="fas fa-sign-in-alt me-3"></i>Đăng nhập</h3>
+                    <p class="mt-2 mb-0">Chào mừng trở lại ReViCARE</p>
+                </div>
+                <div class="login-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} mb-4">
+                                <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' %}fas fa-exclamation-circle{% else %}fas fa-info-circle{% endif %} me-2"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                <i class="fas fa-user me-2 text-primary"></i>Tên đăng nhập
+                            </label>
+                            {{ form.username|attr:"class:form-control"|attr:"placeholder:Nhập tên đăng nhập" }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock me-2 text-primary"></i>Mật khẩu
+                            </label>
+                            {{ form.password|attr:"class:form-control"|attr:"placeholder:Nhập mật khẩu" }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">{{ form.password.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+                            </div>
+                            <a href="#" class="text-decoration-none small">Quên mật khẩu?</a>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-4">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="login-footer">
+                        <p class="mb-0">Chưa có tài khoản? <a href="{% url 'accounts:register' %}" class="register-link">Đăng ký ngay</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

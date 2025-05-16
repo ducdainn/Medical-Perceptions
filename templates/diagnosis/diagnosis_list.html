@@ -6,9 +6,11 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Danh sách chẩn đoán</h2>
+        {% if user.is_staff %}
         <a href="{% url 'diagnosis:create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Tạo chẩn đoán mới
         </a>
+        {% endif %}
     </div>
 
     {% if diagnoses %}
@@ -41,7 +43,11 @@
     </div>
     {% else %}
     <div class="alert alert-info">
+        {% if user.is_staff %}
         Chưa có chẩn đoán nào. Hãy <a href="{% url 'diagnosis:create' %}">tạo chẩn đoán mới</a>.
+        {% else %}
+        Chưa có chẩn đoán nào.
+        {% endif %}
     </div>
     {% endif %}
 </div>

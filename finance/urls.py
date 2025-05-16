@@ -24,4 +24,13 @@ urlpatterns = [
     path("report/<int:pk>/", views.report_detail, name="report_detail"),
     path("report/<int:pk>/edit/", views.report_edit, name="report_edit"),
     path("report/<int:pk>/delete/", views.report_delete, name="report_delete"),
+    
+    # Temporary fix for transaction_list URL
+    path("transaction/", views.transaction_list, name="transaction_list"),
+    
+    # Temporary fix for bill_list URL
+    path("bill/", views.bill_list, name="bill_list"),
+    
+    # Test URL pattern
+    path('test/', views.test_template, name='test'),
 ] 

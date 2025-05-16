@@ -11,7 +11,7 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'pos:sale_list' %}">Danh sách hóa đơn</a></li>
-                    <li class="breadcrumb-item active">Chi tiết hóa đơn #{{ object.id }}</li>
+                    <li class="breadcrumb-item active">Chi tiết hóa đơn #{{ sale.id }}</li>
                 </ol>
             </nav>
         </div>
@@ -23,7 +23,7 @@
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Thông tin hóa đơn</h5>
                     <div>
-                        <a href="{% url 'pos:sale_edit' object.id %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'pos:sale_edit' sale.id %}" class="btn btn-sm btn-primary">
                             <i class="fas fa-edit"></i> Sửa
                         </a>
                         <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
@@ -34,44 +34,44 @@
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <p class="mb-1"><strong>Mã hóa đơn:</strong> #{{ object.id }}</p>
-                            <p class="mb-1"><strong>Khách hàng:</strong> {{ object.customer_name }}</p>
-                            <p class="mb-1"><strong>Thu ngân:</strong> {{ object.cashier.get_full_name }}</p>
-                            {% if object.transaction %}
-                            <p class="mb-1"><strong>Giao dịch nguồn:</strong> <a href="#transaction-info" data-bs-toggle="collapse" aria-expanded="false" aria-controls="transaction-info">#{{ object.transaction.id }}</a></p>
+                            <p class="mb-1"><strong>Mã hóa đơn:</strong> #{{ sale.id }}</p>
+                            <p class="mb-1"><strong>Khách hàng:</strong> {{ sale.customer_name }}</p>
+                            <p class="mb-1"><strong>Thu ngân:</strong> {{ sale.cashier.get_full_name }}</p>
+                            {% if sale.transaction %}
+                            <p class="mb-1"><strong>Giao dịch nguồn:</strong> <a href="#transaction-info" data-bs-toggle="collapse" aria-expanded="false" aria-controls="transaction-info">#{{ sale.transaction.id }}</a></p>
                             <div class="collapse mt-2" id="transaction-info">
                                 <div class="card card-body bg-light">
-                                    <p class="mb-1"><strong>Loại giao dịch:</strong> {{ object.transaction.get_transaction_type_display }}</p>
-                                    {% if object.transaction.prescription %}
-                                    <p class="mb-1"><strong>Đơn thuốc:</strong> #{{ object.transaction.prescription.id }} - {{ object.transaction.prescription.patient_name }}</p>
+                                    <p class="mb-1"><strong>Loại giao dịch:</strong> {{ sale.transaction.get_transaction_type_display }}</p>
+                                    {% if sale.transaction.prescription %}
+                                    <p class="mb-1"><strong>Đơn thuốc:</strong> #{{ sale.transaction.prescription.id }} - {{ sale.transaction.prescription.patient_name }}</p>
                                     {% endif %}
-                                    <p class="mb-1"><strong>Người tạo:</strong> {{ object.transaction.created_by.get_full_name }}</p>
-                                    <p class="mb-1"><strong>Ngày tạo:</strong> {{ object.transaction.created_at|date:"d/m/Y H:i" }}</p>
-                                    <p class="mb-0"><strong>Ghi chú:</strong> {{ object.transaction.notes|default:"Không có" }}</p>
+                                    <p class="mb-1"><strong>Người tạo:</strong> {{ sale.transaction.created_by.get_full_name }}</p>
+                                    <p class="mb-1"><strong>Ngày tạo:</strong> {{ sale.transaction.created_at|date:"d/m/Y H:i" }}</p>
+                                    <p class="mb-0"><strong>Ghi chú:</strong> {{ sale.transaction.notes|default:"Không có" }}</p>
                                 </div>
                             </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <p class="mb-1"><strong>Ngày tạo:</strong> {{ object.created_at|date:"d/m/Y H:i" }}</p>
-                            <p class="mb-1"><strong>Cập nhật:</strong> {{ object.updated_at|date:"d/m/Y H:i" }}</p>
+                            <p class="mb-1"><strong>Ngày tạo:</strong> {{ sale.created_at|date:"d/m/Y H:i" }}</p>
+                            <p class="mb-1"><strong>Cập nhật:</strong> {{ sale.updated_at|date:"d/m/Y H:i" }}</p>
                             <p class="mb-1">
                                 <strong>Trạng thái:</strong>
-                                {% if object.status == 'pending' %}
+                                {% if sale.status == 'pending' %}
                                 <span class="badge bg-warning text-dark">Chờ xử lý</span>
-                                {% elif object.status == 'completed' %}
+                                {% elif sale.status == 'completed' %}
                                 <span class="badge bg-success">Hoàn thành</span>
-                                {% elif object.status == 'cancelled' %}
+                                {% elif sale.status == 'cancelled' %}
                                 <span class="badge bg-danger">Đã hủy</span>
                                 {% endif %}
                             </p>
                         </div>
                     </div>
                     
-                    {% if object.notes %}
+                    {% if sale.notes %}
                     <div class="mb-3">
                         <h6 class="fw-bold">Ghi chú:</h6>
-                        <p class="mb-0">{{ object.notes }}</p>
+                        <p class="mb-0">{{ sale.notes }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -94,7 +94,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in object.items.all %}
+                                {% for item in sale.items.all %}
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
@@ -117,7 +117,7 @@
                             <tfoot class="table-light">
                                 <tr>
                                     <td colspan="4" class="text-end fw-bold">Tổng cộng:</td>
-                                    <td class="text-end fw-bold">{{ object.get_total|floatformat:0 }} VNĐ</td>
+                                    <td class="text-end fw-bold">{{ sale.get_total|floatformat:0 }} VNĐ</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -134,16 +134,16 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <span>Tổng sản phẩm:</span>
-                        <span>{{ object.items.count }}</span>
+                        <span>{{ sale.items.count }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Tổng số lượng:</span>
-                        <span>{{ object.get_total_quantity }}</span>
+                        <span>{{ sale.get_total_quantity }}</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between fs-5 fw-bold">
                         <span>Tổng tiền:</span>
-                        <span>{{ object.get_total|floatformat:0 }} VNĐ</span>
+                        <span>{{ sale.get_total|floatformat:0 }} VNĐ</span>
                     </div>
                 </div>
             </div>
@@ -154,27 +154,27 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'pos:sale_edit' object.id %}" class="btn btn-primary">
+                        <a href="{% url 'pos:sale_edit' sale.id %}" class="btn btn-primary">
                             <i class="fas fa-edit"></i> Sửa hóa đơn
                         </a>
                         <button type="button" class="btn btn-outline-success" onclick="window.print()">
                             <i class="fas fa-print"></i> In hóa đơn
                         </button>
-                        {% if object.status == 'pending' %}
-                        <form method="post" action="{% url 'pos:sale_edit' object.id %}">
+                        {% if sale.status == 'pending' %}
+                        <form method="post" action="{% url 'pos:update_sale_status' sale.id %}">
                             {% csrf_token %}
                             <input type="hidden" name="status" value="completed">
                             <button type="submit" class="btn btn-success d-block w-100">
                                 <i class="fas fa-check"></i> Hoàn thành hóa đơn
                             </button>
                         </form>
-                        {% elif object.status == 'completed' %}
+                        {% elif sale.status == 'completed' %}
                         <button disabled class="btn btn-success d-block w-100">
                             <i class="fas fa-check-circle"></i> Đã hoàn thành
                         </button>
                         {% endif %}
-                        {% if object.status != 'cancelled' %}
-                        <form method="post" action="{% url 'pos:sale_edit' object.id %}">
+                        {% if sale.status != 'cancelled' %}
+                        <form method="post" action="{% url 'pos:update_sale_status' sale.id %}">
                             {% csrf_token %}
                             <input type="hidden" name="status" value="cancelled">
                             <button type="submit" class="btn btn-outline-danger d-block w-100">
@@ -198,11 +198,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Bạn có chắc chắn muốn xóa hóa đơn <strong>#{{ object.id }}</strong> của <strong>{{ object.customer_name }}</strong> không? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa hóa đơn <strong>#{{ sale.id }}</strong> của <strong>{{ sale.customer_name }}</strong> không? Hành động này không thể hoàn tác.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <form method="post" action="{% url 'pos:sale_delete' object.id %}">
+                <form method="post" action="{% url 'pos:sale_delete' sale.id %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">Xóa hóa đơn</button>
                 </form>

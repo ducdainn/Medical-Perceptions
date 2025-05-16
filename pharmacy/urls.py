@@ -25,4 +25,14 @@ urlpatterns = [
     path('transactions/<int:pk>/edit/', views.transaction_edit, name='transaction_edit'),
     path('transactions/<int:pk>/delete/', views.transaction_delete, name='transaction_delete'),
     path('api/prescriptions/<int:pk>/items/', views.prescription_items_api, name='prescription_items_api'),
+    
+    # Các URL mới cho yêu cầu kê đơn thuốc
+    path('prescription-requests/', views.prescription_request_list, name='prescription_request_list'),
+    path('prescription-requests/create/', views.request_prescription, name='request_prescription'),
+    path('prescription-requests/<int:pk>/', views.prescription_request_detail, name='prescription_request_detail'),
+    path('prescription-requests/<int:pk>/approve/', views.approve_prescription_request, name='approve_prescription_request'),
+    path('prescription-requests/<int:pk>/reject/', views.reject_prescription_request, name='reject_prescription_request'),
+    path('prescription-requests/<int:pk>/delete/', views.delete_prescription_request, name='delete_prescription_request'),
+    path('pharmacist-requests/', views.pharmacist_prescription_requests, name='pharmacist_requests'),
+    path('prescription-requests/help/', views.prescription_request_help, name='prescription_request_help'),
 ] 

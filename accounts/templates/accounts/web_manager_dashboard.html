@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Web Manager Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        border: none;
+        border-radius: 10px;
+        transition: transform 0.3s, box-shadow 0.3s;
+        height: 100%;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .welcome-header {
+        background: linear-gradient(135deg, #20bf55 0%, #01baef 100%);
+        border-radius: 10px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-header {
+        position: relative;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .section-header:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -8px;
+        height: 3px;
+        width: 50px;
+        background: #20bf55;
+    }
+    
+    .card-title {
+        font-weight: 600;
+    }
+    
+    .btn-feature {
+        border-radius: 50px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-feature:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-card {
+        padding: 16px;
+        border-radius: 10px;
+        color: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .stats-card .stats-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card .stats-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(45deg, #4e73df 0%, #36b9cc 100%);
+        box-shadow: 0 5px 15px rgba(78, 115, 223, 0.2);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(45deg, #1cc88a 0%, #20bf55 100%);
+        box-shadow: 0 5px 15px rgba(28, 200, 138, 0.2);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(45deg, #36b9cc 0%, #01baef 100%);
+        box-shadow: 0 5px 15px rgba(54, 185, 204, 0.2);
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(45deg, #f6c23e 0%, #ffa501 100%);
+        box-shadow: 0 5px 15px rgba(246, 194, 62, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="welcome-header fade-in">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <i class="fas fa-user-shield fa-3x"></i>
+            </div>
+            <div class="col">
+                <h2 class="mb-0">Xin chào, {{ request.user.get_full_name|default:request.user.username }}</h2>
+                <p class="mb-0 opacity-75">Quản lý Website - ReViCARE</p>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-light">
+                    <i class="fas fa-user-edit me-1"></i>Hồ sơ
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-primary fade-in">
+                <div>
+                    <i class="fas fa-users stats-icon"></i>
+                    <div class="stats-value">120</div>
+                </div>
+                <div class="stats-label">Tổng người dùng</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-success fade-in">
+                <div>
+                    <i class="fas fa-pills stats-icon"></i>
+                    <div class="stats-value">245</div>
+                </div>
+                <div class="stats-label">Sản phẩm thuốc</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-info fade-in">
+                <div>
+                    <i class="fas fa-comments stats-icon"></i>
+                    <div class="stats-value">18</div>
+                </div>
+                <div class="stats-label">Tin nhắn mới</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="stats-card bg-gradient-warning fade-in">
+                <div>
+                    <i class="fas fa-hand-holding-usd stats-icon"></i>
+                    <div class="stats-value">1.2M</div>
+                </div>
+                <div class="stats-label">Doanh thu (VND)</div>
+            </div>
+        </div>
+    </div>
+    
+    <h4 class="section-header">Quản lý chính</h4>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="dashboard-card card bg-white">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                                        <i class="fas fa-user-cog text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title mb-1">Quản lý người dùng</h5>
+                                    <p class="card-text text-muted small mb-2">Quản lý tài khoản của người dùng</p>
+                                    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-primary">Truy cập</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="dashboard-card card bg-white">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                                        <i class="fas fa-comments text-success"></i>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title mb-1">Quản lý chat</h5>
+                                    <p class="card-text text-muted small mb-2">Phản hồi tin nhắn từ người dùng</p>
+                                    <a href="{% url 'chatbot:admin_chat_list' %}" class="btn btn-sm btn-outline-success">Truy cập</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="dashboard-card card bg-white">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                                        <i class="fas fa-chart-line text-warning"></i>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title mb-1">Báo cáo tài chính</h5>
+                                    <p class="card-text text-muted small mb-2">Theo dõi doanh thu tài chính</p>
+                                    <a href="{% url 'finance:report_list' %}" class="btn btn-sm btn-outline-warning">Truy cập</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="dashboard-card card bg-white">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                                        <i class="fas fa-virus text-danger"></i>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title mb-1">Quản lý bệnh</h5>
+                                    <p class="card-text text-muted small mb-2">Thêm, sửa, xóa bệnh</p>
+                                    <a href="{% url 'diagnosis:diseases' %}" class="btn btn-sm btn-outline-danger">Truy cập</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="dashboard-card card bg-white h-100">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Hoạt động gần đây</h5>
+                        <a href="#" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-primary text-white p-2 me-3">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Người dùng mới đã đăng ký</p>
+                                <small class="text-muted">2 giờ trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-success text-white p-2 me-3">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Thêm mới 5 sản phẩm thuốc</p>
+                                <small class="text-muted">3 giờ trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-info text-white p-2 me-3">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Tin nhắn mới từ khách hàng</p>
+                                <small class="text-muted">5 giờ trước</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <div class="rounded-circle bg-warning text-white p-2 me-3">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small">Doanh thu mới: 500,000 VND</p>
+                                <small class="text-muted">1 ngày trước</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h4 class="section-header">Quản lý hệ thống</h4>
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-pills me-3 text-primary"></i>
+                        <h5 class="card-title mb-0">Quản lý thuốc</h5>
+                    </div>
+                    <p class="card-text text-muted small">Thêm, sửa, xóa thuốc trong hệ thống</p>
+                    <a href="{% url 'pharmacy:medicine_list' %}" class="btn btn-outline-primary btn-sm mt-2 w-100">Truy cập</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-file-medical me-3 text-danger"></i>
+                        <h5 class="card-title mb-0">Đơn thuốc</h5>
+                    </div>
+                    <p class="card-text text-muted small">Quản lý đơn thuốc của bệnh nhân</p>
+                    <a href="{% url 'pharmacy:prescription_list' %}" class="btn btn-outline-danger btn-sm mt-2 w-100">Truy cập</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-hand-holding-usd me-3 text-success"></i>
+                        <h5 class="card-title mb-0">Doanh thu</h5>
+                    </div>
+                    <p class="card-text text-muted small">Xem và quản lý doanh thu</p>
+                    <a href="{% url 'finance:revenue_list' %}" class="btn btn-outline-success btn-sm mt-2 w-100">Truy cập</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card card bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-file-invoice-dollar me-3 text-info"></i>
+                        <h5 class="card-title mb-0">Chi phí</h5>
+                    </div>
+                    <p class="card-text text-muted small">Xem và quản lý chi phí</p>
+                    <a href="{% url 'finance:expense_list' %}" class="btn btn-outline-info btn-sm mt-2 w-100">Truy cập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add animation when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card, .stats-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('fade-in');
+            }, 100 * index);
+        });
+    });
+</script>
+{% endblock %} 

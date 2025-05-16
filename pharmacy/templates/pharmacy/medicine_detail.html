@@ -7,6 +7,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Chi tiết thuốc</h4>
+                    {% if user.is_staff %}
                     <div>
                         <a href="{% url 'pharmacy:medicine_edit' medicine.id %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Sửa
@@ -15,6 +16,7 @@
                             <i class="fas fa-trash"></i> Xóa
                         </button>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <table class="table">
@@ -64,6 +66,7 @@
     </div>
 
     <!-- Modal xác nhận xóa -->
+    {% if user.is_staff %}
     <div class="modal fade" id="deleteModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -84,5 +87,6 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %} 

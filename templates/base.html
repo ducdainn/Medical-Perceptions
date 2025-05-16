@@ -1,9 +1,14 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ReViCARE - Hệ thống quản lý y tế thông minh">
     <title>{% block title %}ReViCARE{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -11,40 +16,164 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <!-- Custom CSS -->
-    {% load static %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <style>
+        .alert-dismissible.fade.show {
+            display: none !important;
+        }
+        
+        /* Hide chat timestamp labels across the site */
+        .message:empty,
+        .message-content:empty,
+        .user-message:empty,
+        .bot-message:empty {
+            display: none !important;
+        }
+        
+        /* Hide timestamp labels */
+        .timestamp-label {
+            display: none !important;
+        }
+        
+        /* Navbar hover effect */
+        .navbar-nav .nav-link {
+            position: relative;
+        }
+        
+        .navbar-nav .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: white;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: width 0.3s ease;
+        }
+        
+        .navbar-nav .nav-link:hover:after,
+        .navbar-nav .nav-link.active:after {
+            width: 70%;
+        }
+        
+        /* Dropdown hover enhancement */
+        @media (min-width: 992px) {
+            .navbar .dropdown:hover .dropdown-menu {
+                display: block;
+                margin-top: 0;
+                animation: fadeIn 0.3s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .dropdown-menu {
+                border: none;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                border-radius: 8px;
+            }
+            
+            .dropdown-item:hover {
+                background-color: rgba(30, 136, 229, 0.1);
+            }
+        }
+        
+        /* Floating chatbot button */
+        .floating-chatbot {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        
+        .chat-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #119c6a 0%, #25fc73 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .chat-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+        }
+        
+        .chat-btn i {
+            font-size: 24px;
+        }
+        
+        .chat-tooltip {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .floating-chatbot:hover .chat-tooltip {
+            opacity: 1;
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background: linear-gradient(135deg, #0062cc 0%, #1e88e5 100%);">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-hospital-user"></i> ReViCARE
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <i class="fas fa-hospital-user me-2"></i> 
+                <span class="fw-bold">ReViCARE</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="diagnosisDropdown" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="diagnosisDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-stethoscope"></i> Chẩn đoán
                             </a>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu" aria-labelledby="diagnosisDropdown">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'diagnosis:list' %}">
                                         <i class="fas fa-list"></i> Danh sách chẩn đoán
                                     </a>
                                 </li>
+                                {% if user.is_staff or user.is_doctor %}
                                 <li>
                                     <a class="dropdown-item" href="{% url 'diagnosis:create' %}">
                                         <i class="fas fa-plus"></i> Tạo chẩn đoán mới
                                     </a>
                                 </li>
-                                {% if user.is_staff %}
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'diagnosis:recommend_drug' %}">
+                                        <i class="fas fa-pills"></i> Khuyến nghị thuốc
+                                    </a>
+                                </li>
+                                {% if user.is_staff or user.is_web_manager %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'diagnosis:symptoms' %}">
@@ -59,59 +188,181 @@
                                 {% endif %}
                             </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'pharmacy:dashboard' %}">
+                        
+                        <!-- Pharmacy - show to all but with different items -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="pharmacyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-pills"></i> Nhà thuốc
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="pharmacyDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:medicine_list' %}">
+                                        <i class="fas fa-capsules"></i> Danh sách thuốc
+                                    </a>
+                                </li>
+                                
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:prescription_list' %}">
+                                        <i class="fas fa-file-medical"></i> Đơn thuốc của tôi
+                                    </a>
+                                </li>
+                                
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:prescription_request_list' %}">
+                                        <i class="fas fa-clipboard-list"></i> Yêu cầu kê đơn thuốc
+                                    </a>
+                                </li>
+                                
+                                {% if user.is_pharmacist or user.is_staff or user.is_web_manager %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:medicine_create' %}">
+                                        <i class="fas fa-plus-circle"></i> Thêm thuốc mới
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:inventory' %}">
+                                        <i class="fas fa-boxes"></i> Quản lý kho
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if user.is_pharmacist or user.is_staff %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pharmacy:pharmacist_requests' %}">
+                                        <i class="fas fa-tasks"></i> Quản lý yêu cầu kê đơn thuốc
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
                         </li>
+                        
+                        <!-- Chat section for all users -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-comments"></i> Tin nhắn
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="chatDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'chatbot:chat' %}">
+                                        <i class="fas fa-comment-dots"></i> Tin nhắn mới
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'chatbot:chat_history' %}">
+                                        <i class="fas fa-history"></i> Lịch sử tin nhắn
+                                    </a>
+                                </li>
+                                {% if user.is_web_manager or user.is_staff %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'chatbot:admin_chat_list' %}">
+                                        <i class="fas fa-headset"></i> Quản lý tin nhắn
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'chatbot:admin_closed_sessions' %}">
+                                        <i class="fas fa-archive"></i> Tin nhắn đã đóng
+                                    </a>
+                                </li>
+                                {% elif user.is_doctor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'chatbot:admin_chat_list' %}">
+                                        <i class="fas fa-user-md"></i> Tư vấn bệnh nhân
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        
+                        <!-- POS and Finance for staff only -->
+                        {% if user.is_staff or user.is_pharmacist %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'pos:sale_list' %}">
                                 <i class="fas fa-cash-register"></i> Bán hàng
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'finance:report_list' %}">
+                        {% endif %}
+                        
+                        {% if user.is_staff or user.is_web_manager %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="financeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-coins"></i> Tài chính
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="financeDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'finance:report_list' %}">
+                                        <i class="fas fa-chart-line"></i> Báo cáo tài chính
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'finance:expense_list' %}">
+                                        <i class="fas fa-exchange-alt"></i> Giao dịch
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'finance:bill_list' %}">
+                                        <i class="fas fa-file-invoice-dollar"></i> Hóa đơn
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> {{ user.get_full_name|default:user.username }}
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="avatar-circle me-2">
+                                    {% with name=user.get_full_name|default:user.username %}
+                                        {{ name|slice:":1" }}
+                                    {% endwith %}
+                                </div>
+                                {{ user.get_full_name|default:user.username }}
+                                
+                                {% if user.is_staff %}
+                                    <span class="badge bg-danger ms-2">Admin</span>
+                                {% elif user.is_web_manager %}
+                                    <span class="badge bg-success ms-2">Web Manager</span>
+                                {% elif user.is_doctor %}
+                                    <span class="badge bg-info ms-2">Bác sĩ</span>
+                                {% elif user.is_pharmacist %}
+                                    <span class="badge bg-warning ms-2">Dược sĩ</span>
+                                {% endif %}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                                        <i class="fas fa-id-card"></i> Hồ sơ
+                                        <i class="fas fa-id-card"></i> Hồ sơ cá nhân
                                     </a>
                                 </li>
-                                {% if user.is_staff %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'admin:index' %}">
-                                            <i class="fas fa-tools"></i> Quản trị
-                                        </a>
-                                    </li>
-                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'accounts:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'accounts:logout' %}">
-                                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                                    </a>
+                                    <form method="post" action="{% url 'accounts:logout' %}" class="d-inline px-2">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                                        </button>
+                                    </form>
                                 </li>
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:login' %}">
-                                <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                        <li class="nav-item me-2">
+                            <a class="nav-link btn btn-outline-light btn-sm px-3" href="{% url 'accounts:login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:register' %}">
-                                <i class="fas fa-user-plus"></i> Đăng ký
+                            <a class="nav-link btn btn-light btn-sm px-3 text-primary" href="{% url 'accounts:register' %}">
+                                <i class="fas fa-user-plus me-1"></i> Đăng ký
                             </a>
                         </li>
                     {% endif %}
@@ -121,12 +372,23 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="container my-4">
+    <main class="container py-4 fade-in">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2 fs-5"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="fas fa-info-circle me-2 fs-5"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
         {% endif %}
@@ -135,61 +397,135 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-light py-4 mt-auto">
+    <footer class="bg-light py-5 mt-auto">
         <div class="container">
             <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <h5 class="mb-3 text-primary"><i class="fas fa-hospital-user me-2"></i>ReViCARE</h5>
+                    <p class="text-muted">Hệ thống quản lý nhà thuốc thông minh với trợ lý ảo hàng đầu tại Việt Nam.</p>
+                    <div class="social-links">
+                        <a href="#" class="me-2"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#" class="me-2"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="me-2"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="me-2"><i class="fab fa-linkedin fa-lg"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h6 class="text-primary mb-3">Dịch vụ</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-muted">Chẩn đoán</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Nhà thuốc</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Tư vấn</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Khuyến nghị thuốc</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h6 class="text-primary mb-3">Về chúng tôi</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-muted">Về ReViCARE</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Đội ngũ bác sĩ</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Đội ngũ dược sĩ</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted">Liên hệ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    <h6 class="text-primary mb-3">Liên hệ</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i>Hà Nội, Việt Nam</li>
+                        <li class="mb-2"><i class="fas fa-phone text-primary me-2"></i>(+84) 123 456 789</li>
+                        <li class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>info@revicare.vn</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start">
-                    <p class="mb-0">&copy; 2024 ReViCARE. All rights reserved.</p>
+                    <p class="mb-0 text-muted">&copy; 2024 ReViCARE. All rights reserved.</p>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <a href="#" class="text-decoration-none text-dark me-3">
-                        <i class="fab fa-facebook"></i>
-                    </a>
-                    <a href="#" class="text-decoration-none text-dark me-3">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="text-decoration-none text-dark">
-                        <i class="fab fa-instagram"></i>
-                    </a>
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item"><a href="#" class="text-muted">Điều khoản</a></li>
+                        <li class="list-inline-item">·</li>
+                        <li class="list-inline-item"><a href="#" class="text-muted">Chính sách</a></li>
+                        <li class="list-inline-item">·</li>
+                        <li class="list-inline-item"><a href="#" class="text-muted">Cookie</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Floating Chat Button -->
+    {% if user.is_authenticated %}
+    <div class="floating-chatbot">
+        <span class="chat-tooltip">Chat với Bot trí tuệ nhân tạo</span>
+        <a href="{% url 'chatbot:bot_chat' %}" class="chat-btn">
+            <i class="fas fa-robot"></i>
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .avatar-circle {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .social-links a {
+            color: var(--primary-color);
+            transition: all var(--transition-speed) ease;
+        }
+        
+        .social-links a:hover {
+            color: var(--primary-dark);
+            transform: translateY(-3px);
+        }
+    </style>
     
     <!-- Custom JS -->
-    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        // Enable Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+        
+        // Navbar active state
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.navbar-nav a.nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                    const parentDropdown = link.closest('.dropdown-menu');
+                    if (parentDropdown) {
+                        const dropdownToggle = document.querySelector(`[data-bs-toggle="dropdown"][aria-expanded="false"]`);
+                        if (dropdownToggle) {
+                            dropdownToggle.classList.add('active');
+                        }
+                    }
+                }
+            });
+            
+            // Add animation to cards when page loads
+            const cards = document.querySelectorAll('.dashboard-card, .stats-card, .health-tip, .feature-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in');
+                }, 100 * index);
+            });
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
-
-    <!-- Chatbot Widget -->
-    {% if user.is_authenticated %}
-        <div id="chatbot-widget" class="card position-fixed bottom-0 end-0 m-3" style="width: 300px; display: none;">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-robot"></i> Trợ lý ảo</span>
-                <button type="button" class="btn-close btn-close-white" onclick="toggleChatbot()"></button>
-            </div>
-            <div class="card-body" style="height: 400px; overflow-y: auto;" id="chat-messages">
-                <!-- Messages will be added here -->
-            </div>
-            <div class="card-footer">
-                <form id="chat-form" onsubmit="sendMessage(event)">
-                    <div class="input-group">
-                        <input type="text" id="message-input" class="form-control" placeholder="Nhập tin nhắn...">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <button id="chatbot-toggle" class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3" onclick="toggleChatbot()">
-            <i class="fas fa-comments"></i>
-        </button>
-    {% endif %}
 </body>
 </html> 

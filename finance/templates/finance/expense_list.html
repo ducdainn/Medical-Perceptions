@@ -1,1 +1,67 @@
- 
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <a href="{% url 'finance:expense_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Thêm chi phí
+        </a>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Loại</th>
+                            <th>Mô tả</th>
+                            <th>Ngày</th>
+                            <th>Người ghi nhận</th>
+                            <th>Số tiền</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in expenses %}
+                        <tr>
+                            <td>#{{ expense.id }}</td>
+                            <td>{{ expense.get_expense_type_display }}</td>
+                            <td>{{ expense.description|truncatechars:50 }}</td>
+                            <td>{{ expense.date|date:"d/m/Y H:i" }}</td>
+                            <td>{{ expense.recorded_by.get_full_name }}</td>
+                            <td class="text-end text-danger fw-bold">{{ expense.amount|floatformat:0 }} VNĐ</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'finance:expense_edit' expense.id %}" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'finance:expense_delete' expense.id %}" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <p class="text-muted mb-0">Không có chi phí nào được tìm thấy.</p>
+                                <p class="mt-2">
+                                    <a href="{% url 'finance:expense_create' %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-circle"></i> Thêm chi phí mới
+                                    </a>
+                                </p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

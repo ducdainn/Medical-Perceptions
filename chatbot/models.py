@@ -44,6 +44,30 @@ class Message(models.Model):
     def __str__(self):
         return f'{self.get_type_display()} - {self.sent_at.strftime("%H:%M:%S")}'
 
+class BotMessage(models.Model):
+    """
+    Model for storing AI chatbot messages without a session
+    """
+    TYPE_CHOICES = [
+        ('user', 'Người dùng'),
+        ('bot', 'Chatbot'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bot_messages', verbose_name='Người dùng')
+    type = models.CharField('Loại tin nhắn', max_length=4, choices=TYPE_CHOICES)
+    content = models.TextField('Nội dung')
+    sent_at = models.DateTimeField('Thời gian gửi', auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Tin nhắn Bot'
+        verbose_name_plural = 'Tin nhắn Bot'
+        ordering = ['sent_at']
+
+    def __str__(self):
+        return f'{self.get_type_display()} - {self.sent_at.strftime("%H:%M:%S")}'
+
 class Intent(models.Model):
     name = models.CharField('Tên ý định', max_length=100)
     description = models.TextField('Mô tả', blank=True)

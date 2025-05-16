@@ -13,4 +13,7 @@ urlpatterns = [
     path('diseases/', views.disease_list, name='diseases'),
     path('diseases/create/', views.disease_create, name='disease_create'),
     path('diseases/<int:pk>/edit/', views.disease_edit, name='disease_edit'),
+    path('recommend-drug/', views.recommend_drug, name='recommend_drug'),
+    path('save-recommendation/', views.save_recommendation, name='save_recommendation'),
+    path('test-prescription-button/', views.test_prescription_button, name='test_prescription_button'),
 ] 

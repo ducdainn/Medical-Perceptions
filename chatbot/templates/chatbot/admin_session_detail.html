@@ -1,0 +1,647 @@
+{% extends 'base.html' %}
+{% load chat_filters %}
+
+{% block title %}Phản hồi Tin nhắn{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main chat container styling */
+    .chat-container {
+        height: 70vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background-color: #f7f9fc;
+        border-radius: 0.75rem;
+        border: 1px solid #e6eaf0;
+        scrollbar-width: thin;
+        scroll-behavior: smooth;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        position: relative;
+    }
+    
+    .chat-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.15);
+        border-radius: 3px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Message styling */
+    .message {
+        display: flex;
+        margin-bottom: 1.5rem;
+        max-width: 85%;
+        position: relative;
+        animation: fadeIn 0.3s ease-in-out;
+        z-index: 2;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message-user {
+        margin-right: auto;
+        flex-direction: row;
+    }
+    
+    .message-bot {
+        margin-left: auto;
+        flex-direction: row-reverse;
+    }
+    
+    .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin: 0 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+    
+    .avatar-user {
+        background: linear-gradient(45deg, #2d88ff, #0057e7);
+    }
+    
+    .avatar-bot {
+        background: linear-gradient(45deg, #28c76f, #1f9254);
+    }
+    
+    .message-content {
+        flex: 1;
+    }
+    
+    .message-bubble {
+        padding: 1rem 1.2rem;
+        border-radius: 1.2rem;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        display: inline-block;
+        max-width: 100%;
+    }
+    
+    .message-bubble:hover {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .message-user .message-bubble {
+        background-color: white;
+        border: 1px solid #e9ecef;
+        border-top-left-radius: 4px;
+        float: left;
+    }
+    
+    .message-bot .message-bubble {
+        background: linear-gradient(135deg, #0078ff, #00c6ff);
+        color: white;
+        border-top-right-radius: 4px;
+        float: right;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 5px;
+        text-align: right;
+        clear: both;
+    }
+    
+    .message-user .message-time {
+        color: rgba(0, 0, 0, 0.6);
+    }
+    
+    .message-bot .message-time {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    /* Input area styling */
+    .message-form {
+        padding: 1.2rem;
+        background-color: white;
+        border: 1px solid #e6eaf0;
+        border-top: none;
+        border-radius: 0 0 0.75rem 0.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        position: relative;
+    }
+    
+    .message-input {
+        border-radius: 24px;
+        padding: 0.85rem 1.2rem;
+        resize: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: 1px solid #e0e6ed;
+        font-size: 0.95rem;
+    }
+    
+    .message-input:focus {
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+    
+    .message-input::placeholder {
+        color: #a0aec0;
+    }
+    
+    /* Button styling */
+    .action-buttons .btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+    
+    .action-buttons .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-send {
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0078ff, #00c6ff);
+        border: none;
+        box-shadow: 0 3px 6px rgba(0, 123, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-send:hover {
+        transform: scale(1.05) rotate(10deg);
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+    }
+    
+    .btn-send i {
+        font-size: 1.2rem;
+    }
+    
+    /* User info styling */
+    .user-info-box {
+        background-color: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e9ecef;
+        margin-bottom: 1.5rem;
+    }
+    
+    .user-info-box h5 {
+        margin-bottom: 1rem;
+        color: #2d3748;
+        font-weight: 600;
+    }
+    
+    .user-avatar-lg {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #6a11cb;
+        margin-bottom: 1rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        background-color: #f8fafc;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid #6a11cb;
+    }
+    
+    .info-label {
+        font-size: 0.8rem;
+        color: #718096;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #2d3748;
+    }
+    
+    /* Staff badge styling */
+    .staff-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .admin-badge {
+        background-color: #6a11cb;
+        color: white;
+    }
+    
+    .doctor-badge {
+        background-color: #28c76f;
+        color: white;
+    }
+    
+    /* Role specific actions */
+    .role-specific-actions {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: #f0f7ff;
+        border: 1px dashed #90cdf4;
+    }
+    
+    .admin-actions {
+        background-color: #f8f0ff;
+        border-color: #d6bcfa;
+    }
+    
+    .doctor-actions {
+        background-color: #f0fff4;
+        border-color: #9ae6b4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Phản hồi tin nhắn</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'chatbot:admin_chat_list' %}">Quản lý tin nhắn</a></li>
+                            <li class="breadcrumb-item active">Phiên tin nhắn #{{ session.id }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    {% if is_manager %}
+                    <span class="staff-badge admin-badge">
+                        <i class="fas fa-user-shield me-1"></i> Quản lý
+                    </span>
+                    {% elif is_doctor %}
+                    <span class="staff-badge doctor-badge">
+                        <i class="fas fa-user-md me-1"></i> Bác sĩ
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Cuộc trò chuyện với {{ session.user.get_full_name|default:session.user.username }}</h5>
+                        <div>
+                            <span class="badge {% if session.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ session.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-container" id="chatContainer">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% if message.type == 'user' %}
+                                <div class="message message-user">
+                                    <div class="message-avatar avatar-user">
+                                        {{ session.user.get_full_name|slice:":1"|upper }}
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="message-bubble">
+                                            {{ message.content }}
+                                            <div class="message-time">{{ message.sent_at|time:"H:i" }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="message message-bot">
+                                    <div class="message-content">
+                                        <div class="message-bubble">
+                                            {{ message.content }}
+                                            <div class="message-time">{{ message.sent_at|time:"H:i" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="message-avatar avatar-bot">
+                                        {% if is_manager %}
+                                        <i class="fas fa-user-shield"></i>
+                                        {% elif is_doctor %}
+                                        <i class="fas fa-user-md"></i>
+                                        {% else %}
+                                        <i class="fas fa-robot"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-comments fa-3x mb-3"></i>
+                                <p>Chưa có tin nhắn nào trong phiên này.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                {% if session.status == 'active' %}
+                <div class="message-form">
+                    <div class="d-flex align-items-center">
+                        <textarea id="messageInput" class="form-control message-input me-3" rows="2" placeholder="Nhập phản hồi của bạn..."></textarea>
+                        <button id="sendButton" class="btn btn-send">
+                            <i class="fas fa-paper-plane text-white"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="role-specific-actions {% if is_manager %}admin-actions{% elif is_doctor %}doctor-actions{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    {% if is_manager %}
+                                    <i class="fas fa-shield-alt me-1"></i> Chức năng quản lý
+                                    {% elif is_doctor %}
+                                    <i class="fas fa-stethoscope me-1"></i> Chức năng bác sĩ
+                                    {% endif %}
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    {% if is_manager %}
+                                    Bạn có thể kết thúc phiên tin nhắn hoặc chuyển tiếp nó.
+                                    {% elif is_doctor %}
+                                    Bạn có thể gửi tư vấn y tế cho bệnh nhân.
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <button id="endSessionBtn" class="btn btn-outline-danger">
+                                    <i class="fas fa-times-circle me-1"></i> Kết thúc phiên
+                                </button>
+                                
+                                {% if is_manager %}
+                                <button id="forwardBtn" class="btn btn-outline-primary">
+                                    <i class="fas fa-share me-1"></i> Chuyển tiếp
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card-footer text-center bg-light">
+                    <p class="mb-0">Phiên tin nhắn đã được kết thúc vào {{ session.ended_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="user-info-box text-center">
+                <div class="user-avatar-lg mx-auto">
+                    {% if session.user.avatar %}
+                        <img src="{{ session.user.avatar.url }}" alt="{{ session.user.get_full_name }}" class="img-fluid rounded-circle">
+                    {% else %}
+                        {{ session.user.get_full_name|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                <h5>{{ session.user.get_full_name|default:session.user.username }}</h5>
+                <div class="badge bg-{{ session.user.user_type|default:'secondary'|user_type_color }} mb-3">
+                    {{ session.user.get_user_type_display|default:"Người dùng" }}
+                </div>
+                
+                <div class="info-item text-start">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ session.user.email }}</div>
+                </div>
+                
+                {% if session.user.phone_number %}
+                <div class="info-item text-start">
+                    <div class="info-label">Số điện thoại</div>
+                    <div class="info-value">{{ session.user.phone_number }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="info-item text-start">
+                    <div class="info-label">Ngày tham gia</div>
+                    <div class="info-value">{{ session.user.date_joined|date:"d/m/Y" }}</div>
+                </div>
+                
+                <div class="info-item text-start">
+                    <div class="info-label">Phiên tin nhắn bắt đầu</div>
+                    <div class="info-value">{{ session.started_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                
+                {% if session.ended_at %}
+                <div class="info-item text-start">
+                    <div class="info-label">Phiên tin nhắn kết thúc</div>
+                    <div class="info-value">{{ session.ended_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% endif %}
+                
+                {% if is_doctor and session.user.medical_history %}
+                <div class="card mt-4 border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-notes-medical me-1"></i> Lịch sử y tế</h6>
+                        <p class="card-text small">{{ session.user.medical_history }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // DOM Elements
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const endSessionBtn = document.getElementById('endSessionBtn');
+    
+    // Variables
+    const sessionId = {{ session.id }};
+    
+    // Functions
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    function formatTime(date) {
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    function addMessage(content, isStaff = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = isStaff ? 'message message-bot' : 'message message-user';
+        
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = isStaff ? 'message-avatar avatar-bot' : 'message-avatar avatar-user';
+        
+        if (isStaff) {
+            {% if is_manager %}
+            avatarDiv.innerHTML = '<i class="fas fa-user-shield"></i>';
+            {% elif is_doctor %}
+            avatarDiv.innerHTML = '<i class="fas fa-user-md"></i>';
+            {% else %}
+            avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
+            {% endif %}
+        } else {
+            avatarDiv.textContent = '{{ session.user.get_full_name|slice:":1"|upper }}';
+        }
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        bubbleDiv.textContent = content;
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.textContent = formatTime(new Date());
+        
+        bubbleDiv.appendChild(timeDiv);
+        contentDiv.appendChild(bubbleDiv);
+        
+        if (isStaff) {
+            messageDiv.appendChild(contentDiv);
+            messageDiv.appendChild(avatarDiv);
+        } else {
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentDiv);
+        }
+        
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    async function sendMessage() {
+        const content = messageInput.value.trim();
+        if (!content) return;
+        
+        try {
+            const response = await fetch('{% url "chatbot:admin_send_message" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    message: content,
+                    session_id: sessionId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addMessage(content, true);
+                messageInput.value = '';
+                messageInput.focus();
+            } else {
+                console.error('Error:', data.error);
+                alert('Có lỗi xảy ra khi gửi tin nhắn: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại sau.');
+        }
+    }
+    
+    async function endSession() {
+        if (!confirm('Bạn có chắc chắn muốn kết thúc phiên tin nhắn này?')) return;
+        
+        try {
+            const response = await fetch(`{% url "chatbot:admin_end_session" session_id=session.id %}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Phiên tin nhắn đã được kết thúc thành công.');
+                location.reload();
+            } else {
+                console.error('Error:', data.error);
+                alert('Có lỗi xảy ra khi kết thúc phiên tin nhắn: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi kết thúc phiên tin nhắn. Vui lòng thử lại sau.');
+        }
+    }
+    
+    // Event Listeners
+    if (sendButton) {
+        sendButton.addEventListener('click', sendMessage);
+    }
+    
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+    
+    if (endSessionBtn) {
+        endSessionBtn.addEventListener('click', endSession);
+    }
+    
+    // Forward functionality (Admin only)
+    {% if is_manager %}
+    const forwardBtn = document.getElementById('forwardBtn');
+    if (forwardBtn) {
+        forwardBtn.addEventListener('click', function() {
+            alert('Chức năng chuyển tiếp sẽ được triển khai trong phiên bản tiếp theo.');
+        });
+    }
+    {% endif %}
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let value = "; " + document.cookie;
+        let parts = value.split("; " + name + "=");
+        if (parts.length === 2) return parts.pop().split(";").shift();
+    }
+    
+    // Scroll to bottom on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        scrollToBottom();
+    });
+</script>
+{% endblock %} 

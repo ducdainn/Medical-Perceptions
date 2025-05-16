@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Hướng dẫn yêu cầu kê đơn thuốc{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-question-circle me-2"></i> Hướng dẫn yêu cầu kê đơn thuốc</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p class="mb-0">Tính năng <strong>Yêu cầu kê đơn thuốc</strong> cho phép bạn gửi yêu cầu kê đơn thuốc trực tiếp từ kết quả khuyến nghị thuốc đến dược sĩ. Dược sĩ sẽ xem xét và kê đơn thuốc phù hợp cho bạn.</p>
+                    </div>
+                    
+                    <h5 class="mt-4">Cách sử dụng tính năng yêu cầu kê đơn thuốc:</h5>
+                    <ol class="list-group list-group-numbered mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Sử dụng tính năng khuyến nghị thuốc</div>
+                                Truy cập mục "Khuyến nghị thuốc" trong menu "Chẩn đoán" và nhập các triệu chứng của bạn để nhận khuyến nghị thuốc.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Nhấn nút "Yêu cầu kê đơn thuốc"</div>
+                                Sau khi nhận được kết quả khuyến nghị thuốc, nhấn nút "Yêu cầu kê đơn thuốc" để gửi yêu cầu đến dược sĩ.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Theo dõi trạng thái yêu cầu</div>
+                                Bạn có thể theo dõi trạng thái yêu cầu kê đơn thuốc trong mục "Yêu cầu kê đơn thuốc" thuộc menu "Nhà thuốc".
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Nhận đơn thuốc</div>
+                                Khi yêu cầu được duyệt và hoàn thành, bạn có thể xem đơn thuốc trong mục "Đơn thuốc của tôi".
+                            </div>
+                        </li>
+                    </ol>
+                    
+                    <h5>Các trạng thái yêu cầu kê đơn thuốc:</h5>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold"><span class="badge bg-warning">Chờ xử lý</span></div>
+                                Yêu cầu đã được gửi và đang chờ dược sĩ xem xét.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold"><span class="badge bg-info">Đã duyệt</span></div>
+                                Dược sĩ đã duyệt yêu cầu và đang xử lý để tạo đơn thuốc.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold"><span class="badge bg-danger">Từ chối</span></div>
+                                Dược sĩ đã từ chối yêu cầu với lý do cụ thể. Bạn có thể tham khảo lý do từ chối để điều chỉnh yêu cầu.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold"><span class="badge bg-success">Đã hoàn thành</span></div>
+                                Đơn thuốc đã được tạo dựa trên yêu cầu của bạn. Bạn có thể xem đơn thuốc trong mục "Đơn thuốc của tôi".
+                            </div>
+                        </li>
+                    </ul>
+                    
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> Lưu ý quan trọng:</h5>
+                        <p>Các khuyến nghị thuốc và đơn thuốc được tạo trên hệ thống chỉ mang tính chất tham khảo. Vui lòng luôn tham khảo ý kiến của bác sĩ hoặc dược sĩ trước khi sử dụng bất kỳ loại thuốc nào.</p>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'pharmacy:prescription_request_list' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-clipboard-list me-1"></i> Xem yêu cầu của tôi
+                        </a>
+                        <a href="{% url 'diagnosis:recommend_drug' %}" class="btn btn-success">
+                            <i class="fas fa-pills me-1"></i> Tạo khuyến nghị thuốc mới
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

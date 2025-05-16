@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Quyền truy cập bị từ chối{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Lỗi 403 - Quyền truy cập bị từ chối</h4>
+                </div>
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="mb-4">Bạn không có quyền truy cập nội dung này</h2>
+                    <p class="lead mb-4">Rất tiếc, bạn không có đủ quyền hạn để xem trang này. Nếu bạn cho rằng đây là lỗi, vui lòng liên hệ quản trị viên.</p>
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+                        <a href="{% url 'home' %}" class="btn btn-primary btn-lg">Về trang chủ</a>
+                        <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary btn-lg">Về Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

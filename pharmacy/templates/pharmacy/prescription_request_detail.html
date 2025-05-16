@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết yêu cầu kê đơn thuốc #{{ request.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i> Chi tiết yêu cầu kê đơn thuốc #{{ request.id }}
+                    </h5>
+                    <div>
+                        <a href="{% url 'pharmacy:prescription_request_list' %}" class="btn btn-sm btn-light">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        <div class="messages mb-4">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Trạng thái -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Trạng thái yêu cầu:</h6>
+                            {% if request.status == 'pending' %}
+                                <span class="badge bg-warning p-2">Chờ xử lý</span>
+                            {% elif request.status == 'approved' %}
+                                <span class="badge bg-info p-2">Đã duyệt</span>
+                            {% elif request.status == 'rejected' %}
+                                <span class="badge bg-danger p-2">Đã từ chối</span>
+                            {% elif request.status == 'completed' %}
+                                <span class="badge bg-success p-2">Đã hoàn thành</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Thông tin bệnh nhân -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-primary h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user me-2"></i> Thông tin bệnh nhân</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Bệnh nhân:</strong> {{ request.patient.get_full_name|default:request.patient.username }}</p>
+                                    <p><strong>Email:</strong> {{ request.patient.email }}</p>
+                                    <p><strong>Ngày tạo yêu cầu:</strong> {{ request.created_at|date:"d/m/Y H:i" }}</p>
+                                    {% if request.updated_at != request.created_at %}
+                                        <p><strong>Cập nhật lần cuối:</strong> {{ request.updated_at|date:"d/m/Y H:i" }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin dược sĩ -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-info h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user-md me-2"></i> Thông tin dược sĩ xử lý</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if request.pharmacist %}
+                                        <p><strong>Dược sĩ:</strong> {{ request.pharmacist.get_full_name|default:request.pharmacist.username }}</p>
+                                        <p><strong>Email:</strong> {{ request.pharmacist.email }}</p>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i> Yêu cầu đang chờ xử lý. Chưa có dược sĩ nào được phân công.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin chẩn đoán -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-warning h-100">
+                                <div class="card-header bg-warning text-white">
+                                    <h6 class="mb-0"><i class="fas fa-stethoscope me-2"></i> Thông tin chẩn đoán</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Bệnh được chẩn đoán:</strong> {{ request.disease }}</p>
+                                    <p><strong>Các triệu chứng:</strong> {{ request.symptoms }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thuốc khuyến nghị -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-success h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-pills me-2"></i> Thuốc khuyến nghị</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ request.recommended_drug }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phản hồi từ dược sĩ -->
+                    {% if request.status == 'rejected' and request.rejection_reason %}
+                        <div class="card border-danger mb-4">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i> Lý do từ chối</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ request.rejection_reason }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Thông tin đơn thuốc -->
+                    {% if request.status == 'completed' and request.prescription %}
+                        <div class="card border-success mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-prescription me-2"></i> Đơn thuốc đã được tạo</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Mã đơn thuốc:</strong> #{{ request.prescription.id }}</p>
+                                <p><strong>Ngày tạo:</strong> {{ request.prescription.created_at|date:"d/m/Y H:i" }}</p>
+                                <p><strong>Ghi chú:</strong> {{ request.prescription.notes|default:"Không có" }}</p>
+                                <div class="mt-3">
+                                    <a href="{% url 'pharmacy:prescription_detail' pk=request.prescription.id %}" class="btn btn-success">
+                                        <i class="fas fa-eye me-1"></i> Xem đơn thuốc
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Các hành động dành cho dược sĩ -->
+                    {% if request.status == 'pending' and user.is_pharmacist %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-tasks me-2"></i> Thao tác</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex">
+                                    <form method="post" action="{% url 'pharmacy:approve_prescription_request' pk=request.id %}" class="me-2">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check-circle me-1"></i> Duyệt và tạo đơn thuốc
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'pharmacy:reject_prescription_request' pk=request.id %}" class="btn btn-danger">
+                                        <i class="fas fa-times-circle me-1"></i> Từ chối
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Các hành động dành cho bệnh nhân -->
+                    {% if request.status == 'pending' and request.patient == user %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-tasks me-2"></i> Thao tác</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'pharmacy:delete_prescription_request' pk=request.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn hủy yêu cầu này?');">
+                                        <i class="fas fa-trash me-1"></i> Hủy yêu cầu
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

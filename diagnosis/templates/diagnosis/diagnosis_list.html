@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Danh sách chẩn đoán</h2>
+    
+    <!-- Drug Recommendation Feature Banner -->
+    <div class="card mb-4 border-primary">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="card-title text-primary">
+                        <i class="fas fa-pills me-2"></i> Trợ lý khuyến nghị thuốc
+                    </h4>
+                    <p class="card-text">
+                        Sử dụng công nghệ AI để nhận khuyến nghị thuốc dựa trên triệu chứng của bạn.
+                        Chỉ cần chọn các triệu chứng và nhận gợi ý thuốc phù hợp ngay lập tức!
+                    </p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <a href="{% url 'diagnosis:recommend_drug' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-stethoscope me-2"></i> Khởi động ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rest of the diagnoses list content -->
+    <div class="mb-3 d-flex justify-content-between">
+        <a href="{% url 'diagnosis:create' %}" class="btn btn-success">
+            <i class="fas fa-plus-circle"></i> Tạo chẩn đoán mới
+        </a>
+    </div>
+    
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Bệnh nhân</th>
+                    <th>Bác sĩ</th>
+                    <th>Bệnh được chẩn đoán</th>
+                    <th>Ngày chẩn đoán</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for diagnosis in diagnoses %}
+                <tr>
+                    <td>{{ diagnosis.id }}</td>
+                    <td>{{ diagnosis.patient.get_full_name }}</td>
+                    <td>{{ diagnosis.doctor.get_full_name|default:"N/A" }}</td>
+                    <td>{{ diagnosis.disease.name }}</td>
+                    <td>{{ diagnosis.diagnosis_date|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'diagnosis:detail' diagnosis.id %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> Xem
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Không có chẩn đoán nào</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,460 @@
+import json
+import requests
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from django.utils import timezone
+from .models import ChatSession, Message, Intent, Response
+import random
+import re
+from diagnosis.models import Symptom, Disease, Diagnosis
+from pharmacy.models import Medicine, Drug
+import aiohttp
+import asyncio
+
+# Gemini API configuration
+GEMINI_API_KEY = "AIzaSyCEua2hrKMgAe_8qcawIXwVGNA7dV39BdA"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        """
+        Called when a WebSocket connection is established
+        """
+        print(f"WebSocket connection attempt from: {self.scope['client']}")
+        
+        try:
+            # Accept the connection
+            await self.accept()
+            print(f"WebSocket connection accepted from: {self.scope['client']}")
+            
+            # Send a welcome message
+            await self.send(text_data=json.dumps({
+                'message': 'Chào mừng bạn đến với trợ lý y tế ảo ReViCARE! Kết nối WebSocket đã thành công. Bạn có thể bắt đầu trò chuyện.',
+                'type': 'bot'
+            }))
+            print(f"Welcome message sent to: {self.scope['client']}")
+        except Exception as e:
+            print(f"Error during WebSocket connection: {str(e)}")
+            try:
+                await self.send(text_data=json.dumps({
+                    'message': f'Lỗi kết nối: {str(e)}',
+                    'type': 'error'
+                }))
+            except:
+                pass
+
+    async def disconnect(self, close_code):
+        """
+        Called when the WebSocket closes
+        """
+        print(f"WebSocket connection closed with code: {close_code} from: {self.scope['client']}")
+
+    async def receive(self, text_data):
+        """
+        Called when we receive a message from the client
+        """
+        print(f"Received raw message from client {self.scope['client']}: {text_data[:100]}...")
+        
+        try:
+            # Parse the JSON message
+                text_data_json = json.loads(text_data)
+            message = text_data_json.get('message', '')
+            session_id = text_data_json.get('session_id')
+            
+            if not message:
+                await self.send(text_data=json.dumps({
+                    'message': 'Tin nhắn trống, vui lòng gửi nội dung.',
+                    'type': 'bot',
+                    'status': 'error'
+                }))
+                return
+            
+            # Log the received message
+            print(f"Processing message: {message}")
+            
+            # Send an acknowledgment
+            await self.send(text_data=json.dumps({
+                'message': f'Đang xử lý: "{message}"',
+                'type': 'bot',
+                'status': 'received'
+            }))
+            
+            # Process the message with Gemini API
+            gemini_response = self.call_gemini_api(message)
+            
+            # Save to database if session_id exists
+            if session_id:
+                try:
+                    await self.save_message_to_db(session_id, 'user', message)
+                    await self.save_message_to_db(session_id, 'bot', gemini_response)
+                except Exception as e:
+                    print(f"Error saving to database: {str(e)}")
+            
+            # Send the response back to the client
+            await self.send(text_data=json.dumps({
+                'message': gemini_response,
+                'type': 'bot',
+                'status': 'success'
+            }))
+                
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({
+                'message': 'Lỗi: Tin nhắn không đúng định dạng JSON.',
+                'type': 'bot',
+                'status': 'error'
+            }))
+        except Exception as e:
+            print(f"WebSocket error in receive: {str(e)}")
+            await self.send(text_data=json.dumps({
+                'message': f'Có lỗi xảy ra: {str(e)}',
+                'type': 'bot',
+                'status': 'error'
+            }))
+
+    def call_gemini_api(self, message):
+        """
+        Call Gemini API synchronously to process the message
+        """
+        try:
+            # Prepare system instructions for medical consultation
+            system_instructions = """Bạn là một trợ lý y tế ảo, giúp người dùng tư vấn sơ bộ về các vấn đề sức khỏe. 
+            Lưu ý:
+            1. Chỉ đưa ra tư vấn sơ bộ, khuyên người dùng đi khám bác sĩ khi cần thiết
+            2. Không đưa ra chẩn đoán xác định hoặc kê đơn thuốc
+            3. Trả lời bằng tiếng Việt, thân thiện và dễ hiểu
+            4. Tập trung vào các triệu chứng và đưa ra hướng dẫn ban đầu
+            5. Luôn giữ thái độ thận trọng và chuyên nghiệp
+            6. Nêu rõ các dấu hiệu nguy hiểm cần đi cấp cứu ngay
+            7. Hỏi thêm thông tin nếu người dùng cung cấp quá ít chi tiết
+            """
+            
+            # Prepare the API request
+            api_request = {
+                "contents": [
+                    {
+                        "role": "system",
+                        "parts": [{"text": system_instructions}]
+                    },
+                    {
+                        "role": "user",
+                        "parts": [{"text": message}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "topP": 0.95,
+                    "topK": 40,
+                    "maxOutputTokens": 2048,
+                },
+                "safetySettings": [
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    }
+                ]
+            }
+            
+            # Make the request to Gemini API
+            response = requests.post(
+                f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+                json=api_request,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            # Process the response
+            if response.status_code == 200:
+                gemini_response = response.json()
+                bot_message = gemini_response.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                
+                if not bot_message:
+                    bot_message = "Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. Vui lòng thử lại sau."
+                
+                return bot_message
+            else:
+                # Fallback responses if API fails
+                if "xin chào" in message.lower() or "chào" in message.lower():
+                    return "Xin chào! Tôi là trợ lý y tế ảo của ReViCARE. Bạn có thể mô tả triệu chứng hoặc đặt câu hỏi về vấn đề sức khỏe của mình."
+                elif "cảm ơn" in message.lower():
+                    return "Không có gì! Tôi luôn sẵn sàng hỗ trợ bạn."
+                elif "ho" in message.lower():
+                    return "Ho có thể là triệu chứng của nhiều bệnh khác nhau, từ cảm lạnh thông thường đến các bệnh nghiêm trọng hơn. Bạn nên uống nhiều nước, nghỉ ngơi đầy đủ. Nếu ho kéo dài hoặc kèm theo các triệu chứng như sốt cao, khó thở, vui lòng đến cơ sở y tế để được khám và tư vấn cụ thể."
+                else:
+                    return f"Xin lỗi, tôi không thể kết nối đến dịch vụ AI lúc này (Lỗi: {response.status_code}). Vui lòng thử lại sau."
+                
+        except Exception as e:
+            print(f"Error calling Gemini API: {str(e)}")
+            return f"Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn: {str(e)}. Vui lòng thử lại sau."
+
+    @database_sync_to_async
+    def save_message_to_db(self, session_id, msg_type, content):
+        """
+        Save a message to the database
+        """
+        try:
+            # Get the chat session
+            session = ChatSession.objects.get(id=session_id)
+            
+            # Create the message
+            message = Message.objects.create(
+                session=session,
+                type=msg_type,
+                content=content
+            )
+            
+            return message
+        except Exception as e:
+            print(f"Error saving message to database: {str(e)}")
+            # Re-raise the exception to be handled by the caller
+            raise
+
+    @database_sync_to_async
+    def create_chat_session(self):
+        return ChatSession.objects.create(user=self.scope["user"])
+
+    @database_sync_to_async
+    def end_chat_session(self):
+        self.session.status = 'closed'
+        self.session.ended_at = timezone.now()
+        self.session.save()
+
+    @database_sync_to_async
+    def save_message(self, msg_type, content):
+        return Message.objects.create(
+            session=self.session,
+            type=msg_type,
+            content=content
+        )
+
+    @database_sync_to_async
+    def get_response(self, intent_name):
+        try:
+            intent = Intent.objects.get(name=intent_name)
+            responses = Response.objects.filter(intent=intent)
+            if responses.exists():
+                return random.choice(responses).content
+        except Intent.DoesNotExist:
+            pass
+        return "Xin lỗi, tôi không hiểu ý của bạn. Bạn có thể nói rõ hơn được không?"
+
+    @database_sync_to_async
+    def extract_symptoms_from_text(self, text):
+        """
+        Tìm kiếm các triệu chứng trong văn bản người dùng nhập vào
+        """
+        # Lấy tất cả triệu chứng từ cơ sở dữ liệu
+        all_symptoms = Symptom.objects.all()
+        
+        # Danh sách lưu các triệu chứng tìm thấy
+        found_symptoms = []
+        
+        # Chuyển văn bản sang chữ thường để dễ so sánh
+        text_lower = text.lower()
+        
+        # Kiểm tra từng triệu chứng có trong văn bản không
+        for symptom in all_symptoms:
+            symptom_name_lower = symptom.name.lower()
+            # Tìm kiếm chính xác triệu chứng
+            if symptom_name_lower in text_lower:
+                found_symptoms.append(symptom)
+            # Có thể thêm các cách tìm kiếm khác như tìm kiếm từ đồng nghĩa, v.v.
+        
+        return found_symptoms
+
+    @database_sync_to_async
+    def find_diseases_by_symptoms(self, symptoms):
+        """
+        Tìm kiếm các bệnh dựa trên triệu chứng
+        """
+        if not symptoms:
+            return []
+        
+        # Lấy tất cả bệnh có ít nhất một triệu chứng trùng khớp
+        diseases = Disease.objects.filter(symptoms__in=symptoms).distinct()
+        
+        # Tính số lượng triệu chứng trùng khớp cho mỗi bệnh
+        disease_matches = []
+        for disease in diseases:
+            matching_symptoms = set(disease.symptoms.all()) & set(symptoms)
+            total_disease_symptoms = disease.symptoms.count()
+            
+            if total_disease_symptoms > 0:
+                # Tính độ tin cậy dựa trên tỉ lệ triệu chứng trùng khớp
+                confidence = len(matching_symptoms) / total_disease_symptoms
+                
+                disease_matches.append({
+                    'disease': disease,
+                    'matching_symptoms': matching_symptoms,
+                    'confidence': confidence,
+                    'missing_symptoms': set(disease.symptoms.all()) - set(symptoms)
+                })
+        
+        # Sắp xếp theo độ tin cậy giảm dần
+        return sorted(disease_matches, key=lambda x: x['confidence'], reverse=True)
+
+    @database_sync_to_async
+    def get_disease_by_name(self, disease_name):
+        """
+        Tìm kiếm bệnh theo tên
+        """
+        try:
+            disease = Disease.objects.get(name__icontains=disease_name)
+            return disease
+        except (Disease.DoesNotExist, Disease.MultipleObjectsReturned):
+            return None
+
+    @database_sync_to_async
+    def get_all_symptoms(self):
+        """
+        Lấy danh sách tất cả các triệu chứng trong hệ thống
+        """
+        from diagnosis.models import Symptom
+        symptoms = Symptom.objects.all().order_by('name')
+        return list(symptoms)
+
+    @database_sync_to_async
+    def get_all_diseases(self):
+        """
+        Lấy danh sách tất cả các bệnh trong hệ thống
+        """
+        from diagnosis.models import Disease
+        diseases = Disease.objects.all().order_by('name')
+        return list(diseases)
+
+    @database_sync_to_async
+    def recommend_medicines_for_disease(self, disease):
+        """
+        Gợi ý thuốc dựa trên bệnh
+        """
+        # Tìm kiếm thuốc trong model Medicine
+        medicines = []
+        
+        # Tìm kiếm dựa trên tên bệnh chứa trong mô tả thuốc
+        medicines_by_description = list(Medicine.objects.filter(description__icontains=disease.name))
+        
+        # Tìm kiếm dựa trên tên thuốc trong Drug model
+        drugs = list(Drug.objects.filter(description__icontains=disease.name))
+        
+        # Kết hợp kết quả
+        if medicines_by_description:
+            medicines.extend(medicines_by_description)
+        
+        # Biến đổi các drug thành format tương tự medicine để hiển thị
+        drug_recommendations = [{
+            'name': drug.name,
+            'description': drug.description,
+            'usage': drug.usage,
+            'dosage': drug.dosage,
+            'price': drug.price,
+            'is_drug': True
+        } for drug in drugs]
+        
+        # Biến đổi các medicine để thống nhất format
+        medicine_recommendations = [{
+            'name': medicine.name,
+            'description': medicine.description,
+            'price': medicine.price,
+            'is_drug': False
+        } for medicine in medicines]
+        
+        # Kết hợp tất cả gợi ý
+        all_recommendations = medicine_recommendations + drug_recommendations
+        
+        return all_recommendations
+        
+    @database_sync_to_async
+    def recommend_medicines_for_symptoms(self, symptoms):
+        """
+        Gợi ý thuốc dựa trên triệu chứng
+        """
+        # Lấy danh sách tên triệu chứng
+        symptom_names = [symptom.name for symptom in symptoms]
+        
+        # Khởi tạo danh sách thuốc
+        medicines = []
+        drugs = []
+        
+        # Tìm kiếm trong Medicine model
+        for symptom_name in symptom_names:
+            medicines_for_symptom = list(Medicine.objects.filter(description__icontains=symptom_name))
+            for medicine in medicines_for_symptom:
+                if medicine not in medicines:
+                    medicines.append(medicine)
+        
+        # Tìm kiếm trong Drug model
+        for symptom_name in symptom_names:
+            drugs_for_symptom = list(Drug.objects.filter(description__icontains=symptom_name))
+            for drug in drugs_for_symptom:
+                if drug not in drugs:
+                    drugs.append(drug)
+        
+        # Biến đổi các kết quả để hiển thị
+        drug_recommendations = [{
+            'name': drug.name,
+            'description': drug.description,
+            'usage': drug.usage,
+            'dosage': drug.dosage,
+            'price': drug.price,
+            'is_drug': True
+        } for drug in drugs]
+        
+        # Biến đổi các medicine để thống nhất format
+        medicine_recommendations = [{
+            'name': medicine.name,
+            'description': medicine.description,
+            'price': medicine.price,
+            'is_drug': False
+        } for medicine in medicines]
+        
+        # Kết hợp tất cả gợi ý
+        all_recommendations = medicine_recommendations + drug_recommendations
+        
+        return all_recommendations
+
+    @database_sync_to_async
+    def save_diagnosis_to_db(self, user, symptoms, disease, confidence_score):
+        """
+        Lưu chẩn đoán vào cơ sở dữ liệu
+        """
+        try:
+            from diagnosis.models import Diagnosis
+            
+            # Tạo chẩn đoán mới
+            diagnosis = Diagnosis.objects.create(
+                patient=user,
+                disease=disease,
+                confidence_score=confidence_score,
+                notes=f"Chẩn đoán tự động bởi chatbot với độ tin cậy {confidence_score:.1f}%"
+            )
+            
+            # Thêm các triệu chứng
+            diagnosis.symptoms.set(symptoms)
+            
+            return diagnosis
+        except Exception as e:
+            print(f"Error saving diagnosis to database: {str(e)}")
+            return None
+
+    @database_sync_to_async
+    def get_user_from_session(self, session_id):
+        """
+        Lấy thông tin người dùng từ ID phiên
+        """
+        from .models import ChatSession
+        try:
+            session = ChatSession.objects.get(id=session_id)
+            return session.user
+        except Exception as e:
+            print(f"Error getting user from session: {str(e)}")
+            return None 

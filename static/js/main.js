@@ -24,21 +24,29 @@ function connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = protocol + '//' + window.location.host + '/ws/chat/';
         
+        console.log('Attempting to connect to WebSocket at:', wsUrl);
+        
         chatSocket = new WebSocket(wsUrl);
         
         chatSocket.onopen = function(e) {
-            console.log('WebSocket connected');
+            console.log('WebSocket connected successfully');
             addSystemMessage('Kết nối thành công với trợ lý ảo');
         };
         
         chatSocket.onmessage = function(e) {
+            console.log('WebSocket message received:', e.data);
             const data = JSON.parse(e.data);
             addMessage(data.message, data.type);
         };
         
         chatSocket.onclose = function(e) {
-            console.log('WebSocket disconnected');
+            console.log('WebSocket disconnected', e);
             chatSocket = null;
+            
+            if (e.code !== 1000) {
+                addSystemMessage('Kết nối bị ngắt. Đang thử kết nối lại...');
+                setTimeout(connectWebSocket, 3000);
+            }
         };
         
         chatSocket.onerror = function(e) {

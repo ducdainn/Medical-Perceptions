@@ -1,1 +1,125 @@
- 
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">{{ title }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'finance:expense_list' %}">Danh sách chi phí</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Vui lòng kiểm tra lại thông tin.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">Số tiền</label>
+                            <div class="input-group">
+                                {{ form.amount }}
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                            {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.amount.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.expense_type.id_for_label }}" class="form-label">Loại chi phí</label>
+                            {{ form.expense_type }}
+                            {% if form.expense_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.expense_type.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.date.id_for_label }}" class="form-label">Ngày ghi nhận</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.transaction.id_for_label }}" class="form-label">Giao dịch (nếu có)</label>
+                            {{ form.transaction }}
+                            {% if form.transaction.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.transaction.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'finance:expense_list' %}" class="btn btn-secondary me-2">Hủy</a>
+                            <button type="submit" class="btn btn-primary">Lưu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Hướng dẫn</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Số tiền:</strong> Nhập số tiền chi phí (VNĐ).</p>
+                    <p class="mb-2"><strong>Loại chi phí:</strong> Chọn loại chi phí phù hợp.</p>
+                    <p class="mb-2"><strong>Ngày ghi nhận:</strong> Chọn ngày phát sinh chi phí.</p>
+                    <p class="mb-2"><strong>Mô tả:</strong> Cung cấp thông tin chi tiết về chi phí.</p>
+                    <p class="mb-0"><strong>Giao dịch:</strong> Liên kết với giao dịch có sẵn (nếu có).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Apply form-control class to all form controls
+        const formElements = document.querySelectorAll('input, select, textarea');
+        formElements.forEach(el => {
+            if (!el.classList.contains('form-check-input') && !el.classList.contains('btn')) {
+                el.classList.add('form-control');
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -71,6 +71,7 @@ class Prescription(models.Model):
     ]
 
     patient_name = models.CharField(max_length=200, default='Bệnh nhân')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_prescriptions', null=True)
     pharmacist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pharmacist_prescriptions', null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     notes = models.TextField(blank=True)
@@ -132,3 +133,30 @@ class TransactionItem(models.Model):
     @property
     def total_price(self):
         return self.quantity * self.unit_price
+
+class PrescriptionRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Chờ xử lý'),
+        ('approved', 'Đã duyệt'),
+        ('rejected', 'Từ chối'),
+        ('completed', 'Đã hoàn thành'),
+    ]
+    
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescription_requests')
+    pharmacist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='handled_prescription_requests', null=True, blank=True)
+    recommended_drug = models.TextField(verbose_name='Thuốc được khuyến nghị')
+    disease = models.CharField(max_length=255, verbose_name='Bệnh được chẩn đoán')
+    symptoms = models.TextField(verbose_name='Các triệu chứng')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    notes = models.TextField(blank=True, verbose_name='Ghi chú')
+    rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối')
+    prescription = models.ForeignKey('Prescription', on_delete=models.SET_NULL, null=True, blank=True, related_name='request_source')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Yêu cầu kê đơn thuốc'
+        verbose_name_plural = 'Yêu cầu kê đơn thuốc'
+        
+    def __str__(self):
+        return f"Yêu cầu #{self.id} - {self.patient.get_full_name() or self.patient.username} - {self.status}"

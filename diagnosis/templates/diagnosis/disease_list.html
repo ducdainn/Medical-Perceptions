@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Danh sách bệnh</h2>
-        {% if user.is_staff %}
+        {% if user.is_staff or user.is_web_manager %}
         <div>
             <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addDiseaseModal">
                 <i class="fas fa-plus"></i> Thêm nhanh
@@ -33,7 +33,7 @@
                     <th>Mô tả</th>
                     <th>Triệu chứng</th>
                     <th>Mức độ</th>
-                    {% if user.is_staff %}
+                    {% if user.is_staff or user.is_web_manager %}
                     <th>Thao tác</th>
                     {% endif %}
                 </tr>
@@ -57,16 +57,122 @@
                         <span class="badge bg-danger">Nặng</span>
                         {% endif %}
                     </td>
-                    {% if user.is_staff %}
+                    {% if user.is_staff or user.is_web_manager %}
                     <td>
-                        <a href="{% url 'diagnosis:disease_edit' disease.id %}" class="btn btn-sm btn-warning">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <button class="btn btn-sm btn-danger delete-disease" data-bs-toggle="modal"
-                                data-bs-target="#deleteDiseaseModal" data-id="{{ disease.id }}"
-                                data-name="{{ disease.name }}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-primary me-1" data-bs-toggle="modal" data-bs-target="#viewDiseaseModal{{ disease.id }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editDiseaseModal{{ disease.id }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDiseaseModal{{ disease.id }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- View Modal -->
+                        <div class="modal fade" id="viewDiseaseModal{{ disease.id }}" tabindex="-1" aria-labelledby="viewDiseaseModal{{ disease.id }}Label" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="viewDiseaseModal{{ disease.id }}Label">{{ disease.name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <h6>Mô tả</h6>
+                                            <p>{{ disease.description }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6>Triệu chứng</h6>
+                                            {% for symptom in disease.symptoms.all %}
+                                            <span class="badge bg-info me-1">{{ symptom.name }}</span>
+                                            {% empty %}
+                                            <p class="text-muted">Không có triệu chứng</p>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6>Mức độ</h6>
+                                            {% if disease.severity == 'low' %}
+                                            <span class="badge bg-success">Nhẹ</span>
+                                            {% elif disease.severity == 'medium' %}
+                                            <span class="badge bg-warning">Trung bình</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Nặng</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Modal -->
+                        <div class="modal fade" id="editDiseaseModal{{ disease.id }}" tabindex="-1" aria-labelledby="editDiseaseModal{{ disease.id }}Label" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="edit">
+                                        <input type="hidden" name="disease_id" value="{{ disease.id }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="editDiseaseModal{{ disease.id }}Label">Chỉnh sửa bệnh</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="name" class="form-label">Tên bệnh</label>
+                                                <input type="text" class="form-control" id="name" name="name" value="{{ disease.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="description" class="form-label">Mô tả</label>
+                                                <textarea class="form-control" id="description" name="description" rows="3">{{ disease.description }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="severity" class="form-label">Mức độ</label>
+                                                <select class="form-select" id="severity" name="severity">
+                                                    <option value="low" {% if disease.severity == 'low' %}selected{% endif %}>Nhẹ</option>
+                                                    <option value="medium" {% if disease.severity == 'medium' %}selected{% endif %}>Trung bình</option>
+                                                    <option value="high" {% if disease.severity == 'high' %}selected{% endif %}>Nặng</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Delete Modal -->
+                        <div class="modal fade" id="deleteDiseaseModal{{ disease.id }}" tabindex="-1" aria-labelledby="deleteDiseaseModal{{ disease.id }}Label" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="disease_id" value="{{ disease.id }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="deleteDiseaseModal{{ disease.id }}Label">Xác nhận xóa</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Bạn có chắc chắn muốn xóa bệnh "{{ disease.name }}" không?</p>
+                                            <p class="text-danger">Lưu ý: Hành động này không thể hoàn tác và có thể ảnh hưởng đến các chẩn đoán hiện có.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-danger">Xóa</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                     {% endif %}
                 </tr>
@@ -81,148 +187,41 @@
 </div>
 
 <!-- Add Disease Modal -->
-<div class="modal fade" id="addDiseaseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thêm bệnh mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">Tên bệnh</label>
-                        {{ form.name }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả</label>
-                        {{ form.description }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Triệu chứng <span class="text-muted fw-bold">(Chọn một hoặc nhiều triệu chứng)</span></label>
-                        <div class="border p-3 rounded bg-light" style="max-height: 200px; overflow-y: auto;">
-                            <div class="alert alert-info py-2">
-                                <small><i class="fas fa-info-circle"></i> Bạn có thể chọn nhiều triệu chứng bằng cách nhấn vào các ô vuông tương ứng.</small>
-                            </div>
-                            <div class="row">
-                                {% for choice in form.symptoms %}
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ choice }}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% if form.symptoms.errors %}
-                        <div class="text-danger mt-2">
-                            {{ form.symptoms.errors }}
-                        </div>
-                        {% endif %}
-                        <div class="mt-2 d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllSymptomsModal">
-                                <i class="fas fa-check-square"></i> Chọn tất cả
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllSymptomsModal">
-                                <i class="fas fa-square"></i> Bỏ chọn tất cả
-                            </button>
-                            <span class="ms-2 form-text text-muted" id="selectedCountModal">0 triệu chứng được chọn</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.severity.id_for_label }}" class="form-label">Mức độ nghiêm trọng</label>
-                        {{ form.severity }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.treatment_guidelines.id_for_label }}" class="form-label">Hướng dẫn điều trị</label>
-                        {{ form.treatment_guidelines }}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Lưu</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Disease Modal -->
-<div class="modal fade" id="deleteDiseaseModal" tabindex="-1">
+{% if user.is_staff or user.is_web_manager %}
+<div class="modal fade" id="addDiseaseModal" tabindex="-1" aria-labelledby="addDiseaseModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận xóa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST">
+            <form method="post" action="{% url 'diagnosis:disease_create' %}">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="disease_id" id="delete_disease_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addDiseaseModalLabel">Thêm bệnh mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
-                    <p>Bạn có chắc chắn muốn xóa bệnh "<span id="delete_disease_name"></span>"?</p>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Tên bệnh</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="severity" class="form-label">Mức độ</label>
+                        <select class="form-select" id="severity" name="severity">
+                            <option value="low">Nhẹ</option>
+                            <option value="medium">Trung bình</option>
+                            <option value="high">Nặng</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-danger">Xóa</button>
+                    <button type="submit" class="btn btn-primary">Thêm</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Cập nhật số lượng triệu chứng được chọn ban đầu trong modal
-    updateSelectedCountModal();
-    
-    // Delete disease
-    document.querySelectorAll('.delete-disease').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const name = this.dataset.name;
-            
-            document.getElementById('delete_disease_id').value = id;
-            document.getElementById('delete_disease_name').textContent = name;
-        });
-    });
-    
-    // Xử lý nút chọn tất cả trong modal
-    document.getElementById('selectAllSymptomsModal').addEventListener('click', function() {
-        document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
-            checkbox.checked = true;
-        });
-        updateSelectedCountModal();
-    });
-    
-    // Xử lý nút bỏ chọn tất cả trong modal
-    document.getElementById('deselectAllSymptomsModal').addEventListener('click', function() {
-        document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateSelectedCountModal();
-    });
-    
-    // Cập nhật khi checkbox thay đổi trong modal
-    document.querySelectorAll('#addDiseaseModal input[name="symptoms"]').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            updateSelectedCountModal();
-        });
-    });
-    
-    // Hàm cập nhật hiển thị số lượng triệu chứng đã chọn trong modal
-    function updateSelectedCountModal() {
-        const count = document.querySelectorAll('#addDiseaseModal input[name="symptoms"]:checked').length;
-        document.getElementById('selectedCountModal').textContent = count + ' triệu chứng được chọn';
-    }
-    
-    // Đảm bảo cập nhật khi modal mở
-    document.getElementById('addDiseaseModal').addEventListener('shown.bs.modal', function() {
-        updateSelectedCountModal();
-    });
-});
-</script>
-{% endblock %}
+{% endif %}
 {% endblock %} 

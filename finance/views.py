@@ -7,8 +7,11 @@ from datetime import timedelta
 from decimal import Decimal
 from .models import Revenue, Expense, FinancialReport
 from .forms import RevenueForm, ExpenseForm, FinancialReportForm
+from accounts.decorators import admin_required, admin_or_web_manager_required
+from django.http import HttpResponse
 
 @login_required
+@admin_or_web_manager_required
 def finance_dashboard(request):
     # Lấy dữ liệu cho biểu đồ (30 ngày gần nhất)
     end_date = timezone.now()
@@ -50,6 +53,7 @@ def finance_dashboard(request):
 
 # === DOANH THU ===
 @login_required
+@admin_or_web_manager_required
 def revenue_list(request):
     revenues = Revenue.objects.all().order_by('-date')
 
@@ -61,6 +65,7 @@ def revenue_list(request):
     return render(request, 'finance/revenue_list.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def revenue_create(request):
     if request.method == 'POST':
         form = RevenueForm(request.POST)
@@ -81,6 +86,7 @@ def revenue_create(request):
     return render(request, 'finance/revenue_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def revenue_edit(request, pk):
     revenue = get_object_or_404(Revenue, pk=pk)
 
@@ -102,6 +108,7 @@ def revenue_edit(request, pk):
     return render(request, 'finance/revenue_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def revenue_delete(request, pk):
     revenue = get_object_or_404(Revenue, pk=pk)
 
@@ -119,6 +126,7 @@ def revenue_delete(request, pk):
 
 # === CHI PHÍ ===
 @login_required
+@admin_or_web_manager_required
 def expense_list(request):
     expenses = Expense.objects.all().order_by('-date')
 
@@ -130,6 +138,7 @@ def expense_list(request):
     return render(request, 'finance/expense_list.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def expense_create(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST)
@@ -150,6 +159,7 @@ def expense_create(request):
     return render(request, 'finance/expense_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def expense_edit(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
 
@@ -171,6 +181,7 @@ def expense_edit(request, pk):
     return render(request, 'finance/expense_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def expense_delete(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
 
@@ -188,6 +199,7 @@ def expense_delete(request, pk):
 
 # === BÁO CÁO TÀI CHÍNH ===
 @login_required
+@admin_or_web_manager_required
 def report_list(request):
     reports = FinancialReport.objects.all().order_by('-generated_at')
 
@@ -199,6 +211,7 @@ def report_list(request):
     return render(request, 'finance/report_list.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def report_create(request):
     if request.method == 'POST':
         form = FinancialReportForm(request.POST)
@@ -231,6 +244,7 @@ def report_create(request):
     return render(request, 'finance/report_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def report_detail(request, pk):
     report = get_object_or_404(FinancialReport, pk=pk)
 
@@ -256,6 +270,7 @@ def report_detail(request, pk):
     return render(request, 'finance/report_detail.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def report_edit(request, pk):
     report = get_object_or_404(FinancialReport, pk=pk)
 
@@ -290,6 +305,7 @@ def report_edit(request, pk):
     return render(request, 'finance/report_form.html', context)
 
 @login_required
+@admin_or_web_manager_required
 def report_delete(request, pk):
     report = get_object_or_404(FinancialReport, pk=pk)
 
@@ -304,3 +320,24 @@ def report_delete(request, pk):
     }
 
     return render(request, 'finance/report_confirm_delete.html', context)
+
+@login_required
+@admin_or_web_manager_required
+def transaction_list(request):
+    """Redirect to expense list as a temporary solution for missing transaction_list URL"""
+    return redirect('finance:expense_list')
+
+@login_required
+@admin_or_web_manager_required
+def bill_list(request):
+    """View to display list of bills - redirects to expense list as a temporary solution"""
+    return redirect('finance:expense_list')
+
+# Add a test view to verify our template tag solution
+def test_template(request):
+    context = {
+        'expense': 3000,
+        'revenue': 10000,
+        'net_income': 7000
+    }
+    return render(request, 'finance/test.html', context)

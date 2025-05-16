@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Xóa chi phí - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Xác nhận xóa chi phí</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">Bạn có chắc chắn muốn xóa chi phí này không? Hành động này không thể hoàn tác.</p>
+                    
+                    <div class="alert alert-warning">
+                        <h6 class="fw-bold">Thông tin chi phí sẽ bị xóa:</h6>
+                        <ul class="mb-0">
+                            <li>Loại: {{ expense.get_expense_type_display }}</li>
+                            <li>Ngày: {{ expense.date|date:"d/m/Y H:i" }}</li>
+                            <li>Mô tả: {{ expense.description|truncatechars:100 }}</li>
+                            <li>Số tiền: {{ expense.amount|floatformat:0 }} VNĐ</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <a href="{% url 'finance:expense_list' %}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left"></i> Hủy
+                        </a>
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Xác nhận xóa
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
