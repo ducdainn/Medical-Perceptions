@@ -44,9 +44,11 @@
                     <td>{{ disease.name }}</td>
                     <td>{{ disease.description|truncatewords:30 }}</td>
                     <td>
-                        {% for symptom in disease.symptoms.all %}
-                        <span class="badge bg-info">{{ symptom.name }}</span>
-                        {% endfor %}
+                        <ul class="list-unstyled mb-0">
+                            {% for symptom in disease.symptoms.all %}
+                            <li>• {{ symptom.name }}</li>
+                            {% endfor %}
+                        </ul>
                     </td>
                     <td>
                         {% if disease.severity == 'low' %}
@@ -86,11 +88,15 @@
                                         </div>
                                         <div class="mb-3">
                                             <h6>Triệu chứng</h6>
-                                            {% for symptom in disease.symptoms.all %}
-                                            <span class="badge bg-info me-1">{{ symptom.name }}</span>
-                                            {% empty %}
+                                            {% if disease.symptoms.all %}
+                                            <ul class="list-group">
+                                                {% for symptom in disease.symptoms.all %}
+                                                <li class="list-group-item">{{ symptom.name }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
                                             <p class="text-muted">Không có triệu chứng</p>
-                                            {% endfor %}
+                                            {% endif %}
                                         </div>
                                         <div class="mb-3">
                                             <h6>Mức độ</h6>

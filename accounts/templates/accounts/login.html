@@ -1,88 +1,266 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %}Đăng nhập{% endblock %}
 
 {% block extra_css %}
 <style>
+    :root {
+        --primary-color: #3f51b5;
+        --primary-light: #757de8;
+        --primary-dark: #002984;
+        --accent-color: #ff4081;
+        --text-light: #ffffff;
+        --text-dark: #333333;
+        --gray-light: #f5f5f5;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    .login-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "images/m.png" %}');
+        background-size: cover;
+        background-position: center;
+        filter: blur(10px);
+        z-index: -10;
+        transform: scale(1.1);
+    }
+    
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: -1;
+    }
+    
     .login-container {
-        min-height: 80vh;
+        min-height: 100vh;
         display: flex;
         align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        position: relative;
+        z-index: 1;
     }
     
-    .login-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+    .login-wrapper {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        border-radius: 16px;
         overflow: hidden;
-        transition: all 0.3s ease;
+        background-color: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
     }
     
-    .login-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);
+    .login-image {
+        display: none;
+        width: 50%;
+        background: url('{% static "images/m.png" %}') center/cover no-repeat;
+        position: relative;
+        color: var(--text-light);
+    }
+    
+    .login-image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(63, 81, 181, 0.7) 0%, rgba(0, 41, 132, 0.8) 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    .login-image-text {
+        text-align: left;
+        max-width: 90%;
+    }
+    
+    .login-image-text h2 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .login-image-text p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+    }
+    
+    .login-form-container {
+        width: 100%;
+        padding: 3rem 2rem;
+        display: flex;
+        flex-direction: column;
     }
     
     .login-header {
-        background: linear-gradient(135deg, #1e88e5 0%, #0062cc 100%);
-        padding: 1.5rem;
-        border-radius: 15px 15px 0 0;
+        margin-bottom: 2rem;
+        text-align: center;
     }
     
-    .login-body {
-        padding: 2.5rem;
+    .login-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .login-logo i {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-right: 0.5rem;
+    }
+    
+    .login-logo span {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .login-header p {
+        color: #666;
+        font-size: 1rem;
     }
     
     .form-control {
-        border-radius: 10px;
-        padding: 12px;
-        border: 1px solid #ddd;
-        background-color: #f8f9fa;
-        transition: all 0.3s ease;
+        border-radius: 8px;
+        padding: 12px 16px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.8);
+        transition: var(--transition);
+        margin-bottom: 1rem;
     }
     
     .form-control:focus {
-        box-shadow: 0 0 0 0.25rem rgba(30, 136, 229, 0.25);
-        border-color: #1e88e5;
+        box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.15);
+        border-color: var(--primary-color);
         background-color: #fff;
     }
     
+    .form-label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+    
     .btn-login {
-        background: linear-gradient(135deg, #1e88e5 0%, #0062cc 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         border: none;
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 12px;
         font-weight: 600;
         letter-spacing: 0.5px;
-        transition: all 0.3s ease;
+        transition: var(--transition);
     }
     
     .btn-login:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 98, 204, 0.3);
+        box-shadow: var(--shadow-md);
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .forgot-password {
+        color: var(--primary-color);
+        transition: var(--transition);
+        text-decoration: none;
+    }
+    
+    .forgot-password:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+    
+    .register-link {
+        color: var(--primary-color);
+        font-weight: 600;
+        transition: var(--transition);
+        text-decoration: none;
+    }
+    
+    .register-link:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+    
+    .login-footer {
+        margin-top: 2rem;
+        text-align: center;
     }
     
     .social-login {
         display: flex;
         justify-content: center;
+        gap: 1rem;
         margin-top: 2rem;
     }
     
+    .social-login-divider {
+        display: flex;
+        align-items: center;
+        margin: 1.5rem 0;
+    }
+    
+    .social-login-divider:before,
+    .social-login-divider:after {
+        content: "";
+        flex-grow: 1;
+        background-color: #ddd;
+        height: 1px;
+    }
+    
+    .social-login-divider span {
+        padding: 0 1rem;
+        color: #777;
+        font-size: 0.9rem;
+    }
+    
     .social-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 10px;
-        color: white;
-        transition: all 0.3s ease;
+        color: var(--text-light);
+        transition: var(--transition);
+        border: none;
     }
     
     .social-btn:hover {
         transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
     }
     
     .google-btn {
@@ -93,102 +271,156 @@
         background-color: #4267B2;
     }
     
-    .register-link {
-        color: #1e88e5;
-        font-weight: 600;
-        transition: all 0.3s ease;
+    .alert {
+        border-radius: 8px;
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+        background-color: rgba(248, 249, 250, 0.9);
     }
     
-    .register-link:hover {
-        color: #0062cc;
-        text-decoration: none;
+    .alert-dismissible .btn-close {
+        color: inherit;
     }
     
-    .login-footer {
-        display: flex;
-        justify-content: center;
-        margin-top: 2rem;
+    .alert-danger {
+        border-left-color: #dc3545;
+        color: #721c24;
     }
     
-    .login-animation {
-        animation: fadeIn 0.8s ease-in-out;
+    .alert-success {
+        border-left-color: #28a745;
+        color: #155724;
     }
     
+    .alert-info {
+        border-left-color: #17a2b8;
+        color: #0c5460;
+    }
+    
+    .alert-warning {
+        border-left-color: #ffc107;
+        color: #856404;
+    }
+    
+    @media (min-width: 768px) {
+        .login-image {
+            display: block;
+        }
+        
+        .login-form-container {
+            width: 50%;
+        }
+    }
+    
+    /* Add animation for smoother appearance */
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+        0% {opacity: 0;}
+        100% {opacity: 1;}
+    }
+    
+    .login-wrapper {
+        animation: fadeIn 0.6s ease-in-out;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container login-container">
-    <div class="row justify-content-center w-100">
-        <div class="col-lg-5 col-md-7 col-sm-10">
-            <div class="card login-card login-animation">
-                <div class="login-header text-center text-white">
-                    <h3 class="mb-0"><i class="fas fa-sign-in-alt me-3"></i>Đăng nhập</h3>
-                    <p class="mt-2 mb-0">Chào mừng trở lại ReViCARE</p>
+<div class="login-container">
+    <div class="login-wrapper">
+        <div class="login-image">
+            <div class="login-image-overlay">
+                <div class="login-image-text">
+                    <h2>Chào mừng đến với ReViCARE</h2>
+                    <p>Hệ thống quản lý y tế giúp bạn chăm sóc sức khỏe tốt hơn</p>
                 </div>
-                <div class="login-body">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} mb-4">
-                                <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' %}fas fa-exclamation-circle{% else %}fas fa-info-circle{% endif %} me-2"></i>
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-4">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">
-                                <i class="fas fa-user me-2 text-primary"></i>Tên đăng nhập
-                            </label>
-                            {{ form.username|attr:"class:form-control"|attr:"placeholder:Nhập tên đăng nhập" }}
-                            {% if form.username.errors %}
-                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="{{ form.password.id_for_label }}" class="form-label">
-                                <i class="fas fa-lock me-2 text-primary"></i>Mật khẩu
-                            </label>
-                            {{ form.password|attr:"class:form-control"|attr:"placeholder:Nhập mật khẩu" }}
-                            {% if form.password.errors %}
-                                <div class="text-danger small mt-1">{{ form.password.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
-                            </div>
-                            <a href="#" class="text-decoration-none small">Quên mật khẩu?</a>
-                        </div>
-                        
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger mb-4">
-                                {% for error in form.non_field_errors %}
-                                    <p class="mb-0">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-login">
-                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div class="login-footer">
-                        <p class="mb-0">Chưa có tài khoản? <a href="{% url 'accounts:register' %}" class="register-link">Đăng ký ngay</a></p>
+            </div>
+        </div>
+        
+        <div class="login-form-container">
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fas fa-hospital-user"></i>
+                    <span>ReViCARE</span>
+                </div>
+                <p>Đăng nhập để tiếp tục</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} mb-4">
+                        <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}fas fa-exclamation-circle{% else %}fas fa-info-circle{% endif %}"></i>
+                        <div>{{ message }}</div>
                     </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        <i class="fas fa-user"></i>Tên đăng nhập
+                    </label>
+                    {{ form.username|attr:"class:form-control"|attr:"placeholder:Nhập tên đăng nhập hoặc email" }}
+                    {% if form.username.errors %}
+                        <div class="text-danger mt-1 small">{{ form.username.errors }}</div>
+                    {% endif %}
                 </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        <i class="fas fa-lock"></i>Mật khẩu
+                    </label>
+                    {{ form.password|attr:"class:form-control"|attr:"placeholder:Nhập mật khẩu của bạn" }}
+                    {% if form.password.errors %}
+                        <div class="text-danger mt-1 small">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+                        <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+                    </div>
+                    <a href="#" class="text-primary small">Quên mật khẩu?</a>
+                </div>
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-login">
+                        <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                    </button>
+                </div>
+            </form>
+            
+            <div class="social-login">
+                <div class="social-login-divider">
+                    <span>hoặc đăng nhập với</span>
+                </div>
+                
+                <div class="social-buttons">
+                    <a href="#" class="social-btn google-btn">
+                        <i class="fab fa-google"></i>Google
+                    </a>
+                    <a href="#" class="social-btn facebook-btn">
+                        <i class="fab fa-facebook-f"></i>Facebook
+                    </a>
+                </div>
+            </div>
+            
+            <div class="login-footer">
+                <p class="mb-0">Chưa có tài khoản? <a href="{% url 'accounts:register' %}" class="register-link">Đăng ký ngay</a></p>
             </div>
         </div>
     </div>

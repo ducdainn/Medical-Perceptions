@@ -3,12 +3,14 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from .models import ChatSession, Message, BotMessage
+from .models import ChatSession, Message, BotMessage, ChatMemory
 from django.utils import timezone
 from dotenv import load_dotenv
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Count, Max, Q
+from .utils import ChatbotDataAccess
+import re
 
 import json
 import requests
@@ -69,14 +71,37 @@ def bot_chat_view(request):
     # Get previous bot messages for the user
     bot_messages = BotMessage.objects.filter(user=request.user).order_by('sent_at')
     
+    # Get or create the user's memory object
+    chat_memory, created = ChatMemory.objects.get_or_create(user=request.user)
+    
+    # Get the current context length
+    context_length = 0
+    if chat_memory.conversation_context.get('messages'):
+        context_length = len(chat_memory.conversation_context.get('messages', []))
+    
     context = {
         'title': 'Bot trò chuyện ReViCARE',
         'bot_messages': bot_messages,
         'is_manager': is_manager(request.user),
         'is_doctor': is_doctor(request.user),
+        'chat_memory': chat_memory,
+        'context_length': context_length,
+        'max_context_length': chat_memory.max_context_length,
     }
     
     return render(request, 'chatbot/bot_chat.html', context)
+
+@login_required
+def reset_chat_context(request):
+    """
+    Reset the conversation context for the current user
+    """
+    try:
+        chat_memory, created = ChatMemory.objects.get_or_create(user=request.user)
+        chat_memory.clear_context()
+        return JsonResponse({'success': True, 'message': 'Đã xóa ngữ cảnh trò chuyện'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def chat_history(request):
@@ -345,7 +370,7 @@ def admin_closed_sessions(request):
 @login_required
 def bot_send_message(request):
     """
-    API endpoint for sending messages to the chatbot and getting AI-generated responses
+    Handle sending messages to the AI chatbot and receiving responses
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -353,57 +378,284 @@ def bot_send_message(request):
     try:
         data = json.loads(request.body)
         user_message = data.get('message', '').strip()
+        reset_context = data.get('reset_context', False)
         
         if not user_message:
             return JsonResponse({'error': 'Message cannot be empty'}, status=400)
         
-        # Save user message
-        user_msg = BotMessage.objects.create(
+        # Get or create the user's memory object
+        chat_memory, created = ChatMemory.objects.get_or_create(user=request.user)
+        
+        # Reset context if requested
+        if reset_context:
+            chat_memory.clear_context()
+        
+        # Save user message to bot messages
+        user_bot_message = BotMessage.objects.create(
             user=request.user,
             type='user',
             content=user_message
         )
         
-        # Prepare prompt for Gemini AI
-        prompt = f"""Bạn là trợ lý chăm sóc sức khỏe tự động của ReViCARE - một hệ thống quản lý phòng khám.
-        Hãy trả lời câu hỏi sau đây một cách chuyên nghiệp, ngắn gọn và hữu ích.
-        Câu hỏi: {user_message}
+        # Add to memory
+        chat_memory.add_message('user', user_message)
         
-        Lưu ý: Trả lời bằng tiếng Việt, và đảm bảo thông tin y tế chính xác. Nếu không chắc chắn về thông tin,
-        hãy đề xuất người dùng tham khảo ý kiến bác sĩ hoặc chuyên gia y tế."""
+        # Check if the message is a query about medical data
+        is_medical_query = check_if_medical_query(user_message)
         
-        # Call the Gemini API
-        response = requests.post(
-            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
+        # Process the message differently based on its type
+        if is_medical_query:
+            # Handle medical data query
+            database_response = process_medical_query(user_message)
+            
+            # Save bot response
+            bot_bot_message = BotMessage.objects.create(
+                user=request.user,
+                type='bot',
+                content=database_response
+            )
+            
+            # Add to memory
+            chat_memory.add_message('bot', database_response)
+            
+            return JsonResponse({
+                'message': database_response,
+                'type': 'bot'
+            })
+        else:
+            # Get conversation context for AI prompt
+            conversation_context = chat_memory.get_context_for_prompt()
+            
+            # Add system information about available data access
+            system_info = """
+            Bạn có thể tìm kiếm thông tin từ cơ sở dữ liệu của ReViCARE về:
+            - Triệu chứng bệnh
+            - Thông tin bệnh
+            - Thuốc và thông tin về thuốc
+            - Thông tin cơ bản về nhân viên y tế (chỉ tên và vai trò)
+            
+            Nếu người dùng hỏi về những thông tin trên, hãy cho họ biết rằng bạn có thể giúp tìm kiếm 
+            thông tin cụ thể trong cơ sở dữ liệu bằng cách họ cung cấp từ khóa rõ ràng.
+            """
+            
+            # Prepare prompt for Gemini AI
+            prompt = f"{system_info}\n\n{conversation_context}\n\nVui lòng trả lời câu hỏi/yêu cầu sau đây của người dùng một cách chính xác và hữu ích:\n{user_message}"
+            
+            # Prepare the request data
+            gemini_data = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ],
                 "generationConfig": {
                     "temperature": 0.7,
+                    "topK": 40,
+                    "topP": 0.95,
                     "maxOutputTokens": 1024,
                 }
             }
-        )
-        
-        if response.status_code != 200:
-            return JsonResponse({'error': f'Gemini API error: {response.text}'}, status=500)
-        
-        response_data = response.json()
-        bot_response = response_data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-        
-        if not bot_response:
-            bot_response = "Xin lỗi, tôi không thể xử lý yêu cầu của bạn bây giờ. Vui lòng thử lại sau."
-        
-        # Save bot response
-        bot_msg = BotMessage.objects.create(
-            user=request.user,
-            type='bot',
-            content=bot_response
-        )
-        
-        return JsonResponse({
-            'message': bot_response,
-            'type': 'bot'
-        })
+            
+            # Call the Gemini API
+            response = requests.post(
+                f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+                json=gemini_data
+            )
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                # Extract the text from the response
+                try:
+                    bot_response = response_data["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    # Save bot response
+                    bot_bot_message = BotMessage.objects.create(
+                        user=request.user,
+                        type='bot',
+                        content=bot_response
+                    )
+                    
+                    # Add to memory
+                    chat_memory.add_message('bot', bot_response)
+                    
+                    return JsonResponse({
+                        'message': bot_response,
+                        'type': 'bot'
+                    })
+                except (KeyError, IndexError) as e:
+                    return JsonResponse({'error': f'Error parsing Gemini response: {str(e)}'}, status=500)
+            else:
+                return JsonResponse({'error': f'Gemini API error: {response.text}'}, status=500)
             
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500) 
+        return JsonResponse({'error': str(e)}, status=500)
+
+def check_if_medical_query(message):
+    """
+    Check if a message is querying for medical data.
+    
+    Args:
+        message (str): The user's message
+        
+    Returns:
+        bool: True if the message is a medical query, False otherwise
+    """
+    # Keywords for medical queries
+    medical_keywords = [
+        'triệu chứng', 'symptom', 
+        'bệnh', 'disease', 
+        'thuốc', 'medicine', 'drug',
+        'điều trị', 'treatment',
+        'bác sĩ', 'doctor',
+        'dược sĩ', 'pharmacist',
+        'tác dụng phụ', 'side effect',
+        'liều lượng', 'dosage',
+        'thành phần', 'composition'
+    ]
+    
+    # Question indicators
+    question_indicators = ['?', 'là gì', 'như thế nào', 'thế nào', 'ra sao', 'làm sao', 'cách', 'chữa', 'hỏi', 'tư vấn', 'tìm']
+    
+    # Check if the message contains both medical keywords and question indicators
+    has_medical_keyword = any(keyword in message.lower() for keyword in medical_keywords)
+    has_question_indicator = any(indicator in message.lower() for indicator in question_indicators)
+    
+    # Direct commands to search for information
+    direct_commands = ['tìm kiếm', 'tìm thông tin về', 'tra cứu', 'search', 'lookup', 'find']
+    has_direct_command = any(command in message.lower() for command in direct_commands)
+    
+    return (has_medical_keyword and has_question_indicator) or has_direct_command
+
+def process_medical_query(message):
+    """
+    Process a medical query and return relevant information.
+    
+    Args:
+        message (str): The user's message
+        
+    Returns:
+        str: Response with relevant medical information
+    """
+    # Extract main search term
+    search_term = extract_search_term(message)
+    
+    if not search_term:
+        return "Tôi hiểu bạn đang tìm thông tin y tế, nhưng tôi cần từ khóa cụ thể để tìm kiếm. Vui lòng cung cấp tên bệnh, triệu chứng, hoặc thuốc mà bạn quan tâm."
+    
+    # Search the knowledge base
+    results = ChatbotDataAccess.search_knowledge_base(search_term)
+    
+    # Check for symptom lists for potential diagnosis
+    symptom_list = extract_symptom_list(message)
+    
+    if symptom_list and len(symptom_list) >= 2:
+        # User might be listing symptoms for diagnosis
+        disease_results = ChatbotDataAccess.get_related_diseases_for_symptoms(symptom_list)
+        
+        if disease_results:
+            # Sort by number of matching symptoms
+            disease_results.sort(key=lambda x: x['matching_count'], reverse=True)
+            
+            response = "Dựa trên các triệu chứng bạn mô tả, đây là một số bệnh có thể liên quan:\n\n"
+            
+            for idx, disease in enumerate(disease_results[:3], 1):
+                matching_ratio = disease['matching_count'] / disease['total_symptoms']
+                confidence = "cao" if matching_ratio > 0.7 else "trung bình" if matching_ratio > 0.4 else "thấp"
+                
+                response += f"{idx}. {disease['name']} (Độ phù hợp: {confidence})\n"
+                response += f"   Mô tả: {disease['description'][:150]}...\n"
+                response += f"   Triệu chứng khớp: {', '.join(disease['matching_symptoms'])}\n\n"
+            
+            response += "Lưu ý: Đây chỉ là thông tin tham khảo. Vui lòng tham khảo ý kiến bác sĩ để được chẩn đoán chính xác."
+            return response
+    
+    # Check for disease-specific drug recommendations
+    disease_match = re.search(r"thuốc.*(cho|trị|điều trị|chữa).*?([a-zA-ZÀ-ỹ\s]+)(?:\?|$)", message, re.IGNORECASE)
+    
+    if disease_match:
+        disease_name = disease_match.group(2).strip()
+        drug_recommendations = ChatbotDataAccess.get_recommended_drugs_for_disease(disease_name)
+        
+        if drug_recommendations:
+            response = f"Các thuốc thường dùng để điều trị {disease_name}:\n\n"
+            
+            for idx, drug in enumerate(drug_recommendations[:5], 1):
+                response += f"{idx}. {drug['name']}\n"
+                response += f"   Mô tả: {drug['description'][:100]}...\n"
+                response += f"   Liều dùng: {drug['dosage'][:100]}...\n\n"
+            
+            response += "Lưu ý: Vui lòng tham khảo ý kiến bác sĩ hoặc dược sĩ trước khi sử dụng bất kỳ loại thuốc nào."
+            return response
+    
+    # Format and return general search results
+    return ChatbotDataAccess.format_search_results(results)
+
+def extract_search_term(message):
+    """
+    Extract the main search term from a message.
+    
+    Args:
+        message (str): The user's message
+        
+    Returns:
+        str: The main search term
+    """
+    # Patterns to extract search terms
+    patterns = [
+        r"tìm (?:kiếm|thông tin về) (.*?)(?:\?|$)",  # "tìm kiếm X" or "tìm thông tin về X"
+        r"(?:thông tin|tư vấn) về (.*?)(?:\?|$)",    # "thông tin về X" or "tư vấn về X"
+        r"(?:bệnh|thuốc|triệu chứng|tác dụng) (?:của |là |gì |như thế nào |)?(.*?)(?:\?|$)",  # Various medical terms
+        r"(.*?) là (?:bệnh|thuốc|triệu chứng) gì",   # "X là bệnh gì"
+        r"(?:chữa|điều trị) (.*?)(?:\?|$)",          # "chữa X" or "điều trị X"
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    
+    # If no pattern matches, use the whole message but limit to first N words
+    words = message.split()
+    if len(words) > 5:
+        return ' '.join(words[:5])
+    
+    return message
+
+def extract_symptom_list(message):
+    """
+    Extract a list of symptoms from a message.
+    
+    Args:
+        message (str): The user's message
+        
+    Returns:
+        list: List of potential symptom names
+    """
+    # Check for listing patterns
+    list_patterns = [
+        r"(?:có|bị) các? triệu chứng (?:như|gồm|bao gồm|là)? (.*?)(?:\.|$)",
+        r"(?:có|bị) (.*?)(?:\.|$)",
+        r"(?:triệu chứng|symptoms)(?:: | là | như | bao gồm | gồm )(.*?)(?:\.|$)",
+    ]
+    
+    for pattern in list_patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            symptom_text = match.group(1)
+            
+            # Split by common separators
+            separators = [',', ';', 'và', 'and', '\n', '\t', '•', '-']
+            for sep in separators:
+                if sep in symptom_text:
+                    return [s.strip() for s in symptom_text.split(sep) if s.strip()]
+            
+            # If no separators found, check for multiple words
+            words = symptom_text.split()
+            if len(words) > 2:  # If more than 2 words, it might be multiple symptoms
+                return [symptom_text]
+    
+    return [] 

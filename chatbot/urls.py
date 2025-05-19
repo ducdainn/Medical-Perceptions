@@ -11,6 +11,7 @@ urlpatterns = [
     path('session/<int:session_id>/', views.session_detail, name='session_detail'),
     path('api/send-message/', views.send_message, name='send_message'),
     path('api/bot-send-message/', views.bot_send_message, name='bot_send_message'),
+    path('api/reset-chat-context/', views.reset_chat_context, name='reset_chat_context'),
     path('api/end-session/<int:session_id>/', views.end_session, name='end_session'),
     path('websocket-test/', views.websocket_test, name='websocket_test'),
     

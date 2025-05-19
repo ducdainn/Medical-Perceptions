@@ -15,6 +15,8 @@ from accounts.decorators import medicine_view_only, pharmacist_required, admin_r
 from diagnosis.models import Symptom, Disease
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.db.models.functions import TruncDay, TruncMonth
 
 User = get_user_model()
 
@@ -167,7 +169,8 @@ def request_prescription(request):
     if request.method == 'POST':
         try:
             # Get data from the form
-            symptoms_ids = request.POST.get('symptoms', '').split(',')
+            symptoms_str = request.POST.get('symptoms', '')
+            symptoms_ids = [s.strip() for s in symptoms_str.split(',') if s.strip()]
             disease = request.POST.get('disease', '')
             disease_name_vi = request.POST.get('disease_name_vi', '')
             recommended_drug = request.POST.get('recommended_drug', '')
@@ -177,6 +180,8 @@ def request_prescription(request):
             print(f"REQUEST PRESCRIPTION DEBUG: Disease: {disease}, Disease VI: {disease_name_vi}")
             print(f"REQUEST PRESCRIPTION DEBUG: Symptom IDs: {symptoms_ids}")
             print(f"REQUEST PRESCRIPTION DEBUG: Recommended drug: {recommended_drug}")
+            print(f"REQUEST PRESCRIPTION DEBUG: Request method: {request.method}")
+            print(f"REQUEST PRESCRIPTION DEBUG: Is AJAX: {'XMLHttpRequest' in request.headers.get('X-Requested-With', '')}")
             
             # Input validation
             if not disease and not disease_name_vi:
@@ -195,7 +200,7 @@ def request_prescription(request):
                     except (Symptom.DoesNotExist, ValueError) as e:
                         print(f"REQUEST PRESCRIPTION DEBUG: Could not find symptom {symptom_id}: {e}")
             
-            symptoms_str = ", ".join(symptoms_text) if symptoms_text else ",".join(symptoms_ids)
+            symptoms_str = ", ".join(symptoms_text) if symptoms_text else "Không có triệu chứng cụ thể"
             
             # Create the prescription request
             prescription_request = PrescriptionRequest.objects.create(
@@ -219,15 +224,45 @@ def request_prescription(request):
             
             # Notify user and redirect
             messages.success(request, 'Yêu cầu kê đơn thuốc đã được gửi thành công. Dược sĩ sẽ xem xét và xử lý yêu cầu của bạn.')
-            return redirect('pharmacy:prescription_request_detail', pk=prescription_request.pk)
+            
+            # Check if this is an AJAX request
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            print(f"REQUEST PRESCRIPTION DEBUG: Is AJAX request: {is_ajax}")
+            
+            if is_ajax:
+                redirect_url = reverse('pharmacy:prescription_request_detail', kwargs={'pk': prescription_request.pk})
+                print(f"REQUEST PRESCRIPTION DEBUG: AJAX response with redirect to {redirect_url}")
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Yêu cầu kê đơn thuốc đã được gửi thành công.',
+                    'redirect_url': redirect_url
+                })
+            else:
+                print(f"REQUEST PRESCRIPTION DEBUG: Standard redirect to detail page")
+                return redirect('pharmacy:prescription_request_detail', pk=prescription_request.pk)
         except Exception as e:
             # Log and handle errors
             import traceback
             print(f"REQUEST PRESCRIPTION DEBUG: Error creating request: {e}")
             print(f"REQUEST PRESCRIPTION DEBUG: Traceback: {traceback.format_exc()}")
-            messages.error(request, f'Có lỗi xảy ra khi gửi yêu cầu: {str(e)}')
+            
+            error_message = f'Có lỗi xảy ra khi gửi yêu cầu: {str(e)}'
+            messages.error(request, error_message)
+            
+            # Handle AJAX request errors
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                print(f"REQUEST PRESCRIPTION DEBUG: Returning JSON error response")
+                return JsonResponse({
+                    'success': False,
+                    'message': error_message
+                }, status=400)
+            else:
+                print(f"REQUEST PRESCRIPTION DEBUG: Redirecting to recommend_drug after error")
+                return redirect('diagnosis:recommend_drug')
     
-    # Default fallback
+    # Default fallback for GET requests
+    print(f"REQUEST PRESCRIPTION DEBUG: GET request - redirecting to recommend_drug")
+    messages.info(request, 'Vui lòng sử dụng khuyến nghị thuốc để tạo yêu cầu kê đơn.')
     return redirect('diagnosis:recommend_drug')
 
 @login_required

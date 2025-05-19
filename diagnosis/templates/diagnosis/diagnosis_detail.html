@@ -59,20 +59,22 @@
                             <h5 class="mb-0">Triệu chứng</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                {% for symptom in diagnosis.symptoms.all %}
-                                <div class="col-md-4 mb-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                        <span>{{ symptom.name }}</span>
+                            {% if diagnosis.symptoms.all %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        <ul class="list-group">
+                                            {% for symptom in diagnosis.symptoms.all %}
+                                            <li class="list-group-item d-flex align-items-center">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                {{ symptom.name }}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
                                     </div>
                                 </div>
-                                {% empty %}
-                                <div class="col-12">
-                                    <p class="text-muted">Không có triệu chứng nào được ghi nhận.</p>
-                                </div>
-                                {% endfor %}
-                            </div>
+                            {% else %}
+                                <p class="text-muted">Không có triệu chứng nào được ghi nhận.</p>
+                            {% endif %}
                         </div>
                     </div>
 

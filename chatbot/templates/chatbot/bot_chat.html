@@ -249,80 +249,174 @@
         background-color: #e0e0e0;
         transform: translateY(-2px);
     }
+
+    /* Context Information */
+    .context-info {
+        background-color: #f0f8ff;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        font-size: 0.85rem;
+        border-left: 4px solid #6a11cb;
+    }
+    
+    .context-badge {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+    }
+    
+    .reset-context-btn {
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: underline;
+        margin-left: 10px;
+    }
+    
+    .reset-context-btn:hover {
+        color: #bd2130;
+    }
+
+    /* Database Information */
+    .database-info {
+        background-color: #fff8e1;
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin-top: 15px;
+        font-size: 0.85rem;
+        border-left: 4px solid #ffa000;
+    }
+    
+    .database-badge {
+        background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        margin-left: 5px;
+    }
+    
+    .database-hint {
+        font-style: italic;
+        color: #666;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+    
+    .feature-item {
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 5px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <!-- Toggle between staff chat and bot chat -->
-            <div class="chat-toggle mb-4">
-                <a href="{% url 'chatbot:chat' %}" class="chat-toggle-btn">
-                    <i class="fas fa-user-md me-2"></i>Chat với Nhân viên
-                </a>
-                <a href="{% url 'chatbot:bot_chat' %}" class="chat-toggle-btn active">
-                    <i class="fas fa-robot me-2"></i>Chat với Bot
-                </a>
-            </div>
-            
-            <div class="card shadow-sm border-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow border-0">
+                <!-- Chat Header -->
                 <div class="chat-header d-flex align-items-center">
                     <div class="avatar">
-                        <i class="fas fa-robot"></i>
+                        <i class="bi bi-robot"></i>
                     </div>
                     <div>
-                        <h5 class="mb-0">ReViCARE Bot</h5>
-                        <div class="small">
-                            <span class="status-indicator"></span>
-                            <span>Trực tuyến</span>
-                        </div>
+                        <h5 class="mb-0">Bot trò chuyện ReViCARE</h5>
+                        <small>Trợ lý ảo thông minh</small>
+                        <span class="status-indicator"></span>
                     </div>
                 </div>
                 
+                <!-- Context Information -->
+                <div class="context-info d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-info-circle"></i> 
+                        Ngữ cảnh cuộc trò chuyện: 
+                        <span class="context-badge">{{ context_length }}/{{ max_context_length }}</span>
+                        tin nhắn
+                    </div>
+                    <a href="#" id="resetContextBtn" class="reset-context-btn">
+                        <i class="bi bi-arrow-counterclockwise"></i> Xóa ngữ cảnh
+                    </a>
+                </div>
+                
+                <!-- Database Access Information -->
+                <div class="database-info">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-database me-2"></i>
+                        <strong>Truy cập cơ sở dữ liệu y tế:</strong>
+                    </div>
+                    <div class="mt-2">
+                        <div class="feature-item">
+                            <i class="bi bi-activity me-1"></i> Triệu chứng 
+                            <span class="database-badge">{{ symptom_count|default:"nhiều" }}</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-virus me-1"></i> Bệnh 
+                            <span class="database-badge">{{ disease_count|default:"nhiều" }}</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-capsule me-1"></i> Thuốc 
+                            <span class="database-badge">{{ drug_count|default:"nhiều" }}</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-prescription2 me-1"></i> Thuốc y tế 
+                            <span class="database-badge">{{ medicine_count|default:"nhiều" }}</span>
+                        </div>
+                    </div>
+                    <div class="database-hint">
+                        Bạn có thể hỏi về triệu chứng, bệnh, thuốc, và đội ngũ nhân viên. Ví dụ: "Triệu chứng của bệnh tiểu đường là gì?" hoặc "Tìm thông tin về thuốc paracetamol".
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
                 <div class="chat-container" id="chatContainer">
+                    <!-- Messages will be populated by JavaScript -->
                     {% if bot_messages %}
                         {% for message in bot_messages %}
-                            {% if message.type == 'user' %}
-                                <div class="message user-message">
-                                    {{ message.content }}
-                                    <div class="message-time">{{ message.sent_at|time:"H:i" }}</div>
-                                </div>
-                            {% else %}
-                                <div class="message bot-message">
-                                    {{ message.content }}
-                                    <div class="message-time">{{ message.sent_at|time:"H:i" }}</div>
-                                </div>
-                            {% endif %}
+                            <div class="message {% if message.type == 'user' %}user-message{% else %}bot-message{% endif %}">
+                                {{ message.content|linebreaks }}
+                                <div class="message-time">{{ message.sent_at|time:"H:i" }}</div>
+                            </div>
                         {% endfor %}
                     {% else %}
-                        <div class="system-message">
-                            Xin chào! Tôi là ReViCARE Bot, sẵn sàng hỗ trợ bạn về các vấn đề sức khỏe và dịch vụ y tế. Bạn có câu hỏi gì không?
+                        <div class="message system-message">
+                            Chào mừng bạn đến với Bot trò chuyện ReViCARE! Tôi có thể giúp bạn tìm thông tin y tế, truy vấn tồn kho thuốc, và trả lời các câu hỏi liên quan đến chẩn đoán bệnh. Hệ thống có thể truy vấn dữ liệu y tế để cung cấp thông tin chính xác và cập nhật.
                         </div>
                     {% endif %}
-                    
-                    <div class="typing-indicator" id="typingIndicator">
-                        <div class="typing-animation">
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                        </div>
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-animation">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
                     </div>
                 </div>
                 
+                <!-- Chat Input Area -->
                 <div class="chat-input-area">
                     <form id="messageForm" class="d-flex align-items-center">
                         <input type="text" class="form-control me-2" id="messageInput" placeholder="Nhập câu hỏi của bạn..." autocomplete="off">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-paper-plane me-1"></i> Gửi
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-send"></i>
                         </button>
                     </form>
                     
-                    <div class="quick-actions">
-                        <div class="quick-action" onclick="insertText('Triệu chứng của bệnh tiểu đường là gì?')">Triệu chứng tiểu đường</div>
-                        <div class="quick-action" onclick="insertText('Làm thế nào để đăng ký khám bệnh?')">Đăng ký khám bệnh</div>
-                        <div class="quick-action" onclick="insertText('Cách phòng ngừa cảm cúm')">Phòng ngừa cảm cúm</div>
-                        <div class="quick-action" onclick="insertText('Mẹo giảm đau đầu')">Mẹo giảm đau đầu</div>
+                    <!-- Quick Actions -->
+                    <div class="quick-actions mt-3">
+                        <span class="quick-action" onclick="insertQuestion('Triệu chứng của bệnh tiểu đường là gì?')">Triệu chứng của bệnh tiểu đường?</span>
+                        <span class="quick-action" onclick="insertQuestion('Tìm thông tin về thuốc paracetamol')">Thuốc paracetamol?</span>
+                        <span class="quick-action" onclick="insertQuestion('Thuốc điều trị cao huyết áp?')">Thuốc trị cao huyết áp?</span>
+                        <span class="quick-action" onclick="insertQuestion('Tôi bị đau đầu, sốt và ho. Có thể là bệnh gì?')">Chẩn đoán triệu chứng?</span>
+                        <span class="quick-action" onclick="insertQuestion('Kiểm tra tồn kho thuốc paracetamol')">Tồn kho thuốc?</span>
+                        <span class="quick-action" onclick="insertQuestion('Thống kê đơn thuốc gần đây')">Thống kê đơn thuốc?</span>
                     </div>
                 </div>
             </div>
@@ -333,125 +427,163 @@
 
 {% block extra_js %}
 <script>
-    // DOM elements
-    const chatContainer = document.getElementById('chatContainer');
-    const messageForm = document.getElementById('messageForm');
-    const messageInput = document.getElementById('messageInput');
-    const typingIndicator = document.getElementById('typingIndicator');
-    
-    // Scroll to bottom of chat
-    function scrollToBottom() {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-    
-    // Add message to chat
-    function addMessage(content, type, time = null) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
-        messageDiv.classList.add(type === 'user' ? 'user-message' : 'bot-message');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize chat elements
+        const chatContainer = document.getElementById('chatContainer');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const resetContextBtn = document.getElementById('resetContextBtn');
         
-        messageDiv.innerHTML = content;
+        // Scroll to bottom of chat container
+        scrollToBottom();
         
-        if (time) {
-            const timeDiv = document.createElement('div');
-            timeDiv.classList.add('message-time');
-            timeDiv.textContent = time;
-            messageDiv.appendChild(timeDiv);
-        } else {
-            const timeDiv = document.createElement('div');
-            timeDiv.classList.add('message-time');
-            const now = new Date();
-            timeDiv.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            messageDiv.appendChild(timeDiv);
+        // Function to show typing indicator
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
         }
         
-        chatContainer.appendChild(messageDiv);
-        scrollToBottom();
-    }
-    
-    // Show typing indicator
-    function showTypingIndicator() {
-        typingIndicator.style.display = 'block';
-        scrollToBottom();
-    }
-    
-    // Hide typing indicator
-    function hideTypingIndicator() {
-        typingIndicator.style.display = 'none';
-    }
-    
-    // Insert text into input field
-    function insertText(text) {
-        messageInput.value = text;
-        messageInput.focus();
-    }
-    
-    // Send message
-    async function sendMessage(content) {
-        try {
-            // Add user message to chat
-            addMessage(content, 'user');
+        // Function to hide typing indicator
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+        
+        // Function to scroll chat to bottom
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Function to add message to chat
+        function addMessageToChat(message, type, time = null) {
+            const messageEl = document.createElement('div');
+            messageEl.classList.add('message');
+            messageEl.classList.add(type === 'user' ? 'user-message' : 'bot-message');
             
-            // Show typing indicator
-            showTypingIndicator();
+            // Convert newlines to <br> tags
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            messageEl.innerHTML = formattedMessage;
+            
+            // Add timestamp
+            if (time) {
+                const timeEl = document.createElement('div');
+                timeEl.classList.add('message-time');
+                timeEl.textContent = time;
+                messageEl.appendChild(timeEl);
+            } else {
+                const now = new Date();
+                const timeEl = document.createElement('div');
+                timeEl.classList.add('message-time');
+                timeEl.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                messageEl.appendChild(timeEl);
+            }
+            
+            chatContainer.appendChild(messageEl);
+            scrollToBottom();
+        }
+        
+        // Function to send message to server
+        async function sendMessage(message) {
+            try {
+                showTypingIndicator();
+                
+                const response = await fetch('/chatbot/api/bot-send-message/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                if (data.error) {
+                    // Handle error
+                    addMessageToChat('Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại sau.', 'bot');
+                    console.error('Error:', data.error);
+                } else {
+                    // Add bot response to chat
+                    addMessageToChat(data.message, 'bot');
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessageToChat('Xin lỗi, đã xảy ra lỗi kết nối. Vui lòng thử lại sau.', 'bot');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Function to reset context
+        async function resetContext() {
+            try {
+                const response = await fetch('/chatbot/api/reset-chat-context/', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Add system message to chat
+                    const messageEl = document.createElement('div');
+                    messageEl.classList.add('message', 'system-message');
+                    messageEl.textContent = data.message || 'Đã xóa ngữ cảnh trò chuyện thành công.';
+                    chatContainer.appendChild(messageEl);
+                    scrollToBottom();
+                    
+                    // Update context badge
+                    document.querySelector('.context-badge').textContent = '0/{{ max_context_length }}';
+                } else {
+                    console.error('Error:', data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        // Function to insert question into input field
+        window.insertQuestion = function(question) {
+            messageInput.value = question;
+            messageInput.focus();
+        }
+        
+        // Handle form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            
+            // Clear input field
+            messageInput.value = '';
             
             // Send message to server
-            const response = await fetch('{% url "chatbot:bot_send_message" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    message: content
-                })
-            });
-            
-            // Process response
-            const data = await response.json();
-            
-            // Hide typing indicator
-            hideTypingIndicator();
-            
-            if (data.error) {
-                console.error('Error:', data.error);
-                addMessage(`Error: ${data.error}`, 'bot');
-                return;
-            }
-            
-            // If there's a message in the response, add it to the chat
-            if (data.message) {
-                addMessage(data.message, 'bot');
-            }
-            
-        } catch (error) {
-            console.error('Error:', error);
-            hideTypingIndicator();
-            addMessage(`Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại sau.`, 'bot');
-        }
-    }
-    
-    // Handle form submission
-    messageForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+            sendMessage(message);
+        });
         
-        const content = messageInput.value.trim();
-        if (!content) return;
-        
-        sendMessage(content);
-        messageInput.value = '';
-    });
-    
-    // Get CSRF token
-    function getCookie(name) {
-        let value = "; " + document.cookie;
-        let parts = value.split("; " + name + "=");
-        if (parts.length === 2) return parts.pop().split(";").shift();
-    }
-    
-    // Scroll to bottom on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        scrollToBottom();
+        // Handle reset context button click
+        resetContextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            resetContext();
+        });
     });
 </script>
 {% endblock %} 

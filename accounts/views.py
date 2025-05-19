@@ -39,14 +39,20 @@ class RegisterView(CreateView):
         # Debug info
         print("Form fields:", context['form'].fields.keys())
         print("Form is bound:", context['form'].is_bound)
+        print("Form data:", context['form'].data if context['form'].is_bound else None)
         
         return context
     
     def form_valid(self, form):
         user = form.save()
         if user:
+            # Set default user type to patient
+            user.user_type = 'patient'
+            user.save()
+            
             login(self.request, user)
-            return redirect('accounts:register_information')
+            messages.success(self.request, 'Đăng ký tài khoản thành công!')
+            return redirect('accounts:user_dashboard')
         return redirect('home')
 
 def logout_view(request):
@@ -332,58 +338,59 @@ def delete_user(request, user_id):
     
     return redirect('accounts:user_management')
 
-# Add new view for register information
-def register_information(request):
-    """Additional registration information view"""
-    if not request.user.is_authenticated:
-        messages.error(request, 'Bạn cần đăng nhập để cập nhật thông tin.')
-        return redirect('accounts:register')
+def register(request):
+    """Function-based view for user registration"""
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
         
     if request.method == 'POST':
-        form = UserProfileUpdateForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            try:
-                # Set user type to patient by default for new registrations
-                user = request.user
-                if not user.user_type or user.user_type not in ['admin', 'web_manager', 'doctor', 'pharmacist']:
-                    user.user_type = 'patient'
-                
-                # Save the form
-                profile = form.save(commit=False)
-                profile.save()
-                
-                # Add success message and redirect to dashboard
-                messages.success(request, 'Đăng ký tài khoản thành công!')
-                
-                # Debug information
-                print(f"Form saved successfully for user: {user.username}")
-                print(f"User profile data: first_name={user.first_name}, last_name={user.last_name}, email={user.email}")
-                
-                # Redirect to user dashboard
-                return redirect('accounts:user_dashboard')
-            except Exception as e:
-                # Add error message with exception details
-                messages.error(request, f'Lỗi khi lưu thông tin: {str(e)}')
-                print(f"Error saving form: {str(e)}")
-        else:
-            # Add error message with form errors
-            messages.error(request, 'Thông tin không hợp lệ. Vui lòng kiểm tra lại.')
-            print(f"Form errors: {form.errors}")
-    else:
-        form = UserProfileUpdateForm(instance=request.user)
-    
-    # Add form to context and render template
-    return render(request, 'accounts/register_information.html', {'form': form})
-
-def register(request):
-    """Function-based view for user registration (step 1)"""
-    if request.method == 'POST':
+        print("POST data received:", request.POST)
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            # Set user type to patient by default for new registrations
+            user.user_type = 'patient'
+            user.save()
+            
             login(request, user)
-            return redirect('accounts:register_information')
+            messages.success(request, 'Đăng ký tài khoản thành công!')
+            return redirect('accounts:user_dashboard')
+        else:
+            print(f"Form errors: {form.errors}")
+            # Show error message
+            messages.error(request, 'Đăng ký không thành công. Vui lòng sửa các lỗi bên dưới.')
     else:
         form = UserRegistrationForm()
     
-    return render(request, 'accounts/register_step1.html', {'form': form})
+    # Check if we're using the new URL pattern
+    if 'register-new' in request.path:
+        template_name = 'accounts/register_new.html'
+    else:
+        template_name = 'accounts/register.html'
+    
+    # Enable debug mode to see form fields
+    context = {
+        'form': form,
+        'debug': True  # Enable debug info display
+    }
+    
+    return render(request, template_name, context)
+
+def register_test(request):
+    """Test view for minimal registration form"""
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.user_type = 'patient'
+            user.save()
+            
+            login(request, user)
+            messages.success(request, 'Đăng ký tài khoản thành công!')
+            return redirect('accounts:user_dashboard')
+        else:
+            print(f"Form errors in test: {form.errors}")
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'accounts/register_test.html', {'form': form})

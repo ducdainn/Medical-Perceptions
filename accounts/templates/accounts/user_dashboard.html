@@ -23,7 +23,7 @@
     }
     
     .welcome-header {
-        background: linear-gradient(135deg, #0061ff 0%, #60efff 100%);
+        background: linear-gradient(135deg, #a1ec49 0%, #8bc34a 100%);
         border-radius: 10px;
         padding: 20px;
         color: white;
@@ -90,29 +90,29 @@
         opacity: 0.8;
     }
     
-    .bg-gradient-primary {
-        background: linear-gradient(45deg, #0061ff 0%, #60efff 100%);
-        box-shadow: 0 5px 15px rgba(0, 97, 255, 0.2);
-    }
-    
-    .bg-gradient-success {
-        background: linear-gradient(45deg, #1cc88a 0%, #20bf55 100%);
-        box-shadow: 0 5px 15px rgba(28, 200, 138, 0.2);
-    }
-    
-    .bg-gradient-info {
-        background: linear-gradient(45deg, #36b9cc 0%, #01baef 100%);
-        box-shadow: 0 5px 15px rgba(54, 185, 204, 0.2);
-    }
-    
-    .bg-gradient-warning {
-        background: linear-gradient(45deg, #f6c23e 0%, #ffa501 100%);
-        box-shadow: 0 5px 15px rgba(246, 194, 62, 0.2);
-    }
-    
+    .bg-gradient-primary,
+    .bg-gradient-success,
+    .bg-gradient-info,
+    .bg-gradient-warning,
     .bg-gradient-danger {
-        background: linear-gradient(45deg, #e74a3b 0%, #ff5757 100%);
-        box-shadow: 0 5px 15px rgba(231, 74, 59, 0.2);
+        background: white !important;
+        color: #333 !important;
+        border: none !important;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .stats-icon {
+        background-color: white !important;
+        color: #666 !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .stats-value {
+        color: #333 !important;
+    }
+    
+    .stats-label {
+        color: #666 !important;
     }
     
     .health-tip {
@@ -164,6 +164,19 @@
     .pattern-bg-section {
         background-color: #f8f9fa !important;
         background-image: none !important;
+    }
+    
+    /* Override any additional colored elements */
+    [class*="-accent"] {
+        background-color: white !important;
+        color: #333 !important;
+        border: none !important;
+    }
+    
+    [class*="-accent"]::before,
+    [class*="-accent"]::after {
+        display: none !important;
+        background: transparent !important;
     }
 </style>
 {% endblock %}

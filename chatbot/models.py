@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 class ChatSession(models.Model):
     STATUS_CHOICES = [
@@ -67,6 +68,69 @@ class BotMessage(models.Model):
 
     def __str__(self):
         return f'{self.get_type_display()} - {self.sent_at.strftime("%H:%M:%S")}'
+
+class ChatMemory(models.Model):
+    """
+    Model for storing conversation context for better chatbot responses
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_memories', verbose_name='Người dùng')
+    conversation_context = models.JSONField('Ngữ cảnh cuộc trò chuyện', default=dict, help_text='Lưu trữ ngữ cảnh cuộc trò chuyện dưới dạng JSON')
+    max_context_length = models.IntegerField('Độ dài tối đa của ngữ cảnh', default=10, help_text='Số lượng tin nhắn tối đa được lưu trong ngữ cảnh')
+    last_interaction = models.DateTimeField('Thời gian tương tác cuối cùng', auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Bộ nhớ Chat'
+        verbose_name_plural = 'Bộ nhớ Chat'
+        ordering = ['-last_interaction']
+
+    def __str__(self):
+        return f'Bộ nhớ chat của {self.user.get_full_name()}'
+    
+    def add_message(self, role, content):
+        """
+        Add a message to the conversation context
+        """
+        if not self.conversation_context.get('messages'):
+            self.conversation_context['messages'] = []
+            
+        # Add new message
+        self.conversation_context['messages'].append({
+            'role': role,  # 'user' or 'bot'
+            'content': content,
+            'timestamp': str(timezone.now())
+        })
+        
+        # Trim context if needed
+        if len(self.conversation_context['messages']) > self.max_context_length:
+            # Remove oldest messages but keep the first message as it may contain initial instructions
+            self.conversation_context['messages'] = [self.conversation_context['messages'][0]] + \
+                                                  self.conversation_context['messages'][-(self.max_context_length-1):]
+        
+        self.save()
+        
+    def get_context_for_prompt(self):
+        """
+        Get the conversation context formatted for prompt
+        """
+        if not self.conversation_context.get('messages'):
+            return ""
+        
+        context = "Dưới đây là cuộc trò chuyện trước đó:\n\n"
+        
+        for msg in self.conversation_context['messages']:
+            role_display = "Người dùng" if msg['role'] == 'user' else "Bot"
+            context += f"{role_display}: {msg['content']}\n\n"
+            
+        return context
+    
+    def clear_context(self):
+        """
+        Clear the conversation context
+        """
+        self.conversation_context = {'messages': []}
+        self.save()
 
 class Intent(models.Model):
     name = models.CharField('Tên ý định', max_length=100)

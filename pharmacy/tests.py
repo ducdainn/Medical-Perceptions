@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from .models import Medicine, Prescription, Transaction, PrescriptionItem, TransactionItem, PrescriptionRequest
 from diagnosis.models import Symptom, Disease
 from decimal import Decimal
+import json
 
 User = get_user_model()
 
@@ -436,3 +437,103 @@ class PrescriptionRequestTest(TestCase):
         self.assertIn(completed_request, response.context['prescription_requests'])
         self.assertContains(response, 'Completed Disease')
         self.assertNotContains(response, 'Pending Disease')
+
+class PrescriptionRequestAjaxTest(TestCase):
+    def setUp(self):
+        # Create a test user (patient)
+        self.patient = User.objects.create_user(
+            username='testpatient',
+            password='testpass123',
+            email='patient@test.com',
+            first_name='Test',
+            last_name='Patient'
+        )
+        
+        # Create a symptom for testing
+        self.symptom = Symptom.objects.create(
+            name='Test Symptom',
+            description='Test symptom description'
+        )
+    
+    def test_ajax_prescription_request(self):
+        """Test that AJAX prescription request works correctly"""
+        # Login as patient
+        self.client.login(username='testpatient', password='testpass123')
+        
+        # Initial count of prescription requests
+        initial_count = PrescriptionRequest.objects.count()
+        
+        # Submit a prescription request with AJAX
+        data = {
+            'symptoms': f"{self.symptom.id}",
+            'disease': 'Test Disease',
+            'disease_name_vi': 'Bệnh thử nghiệm',
+            'recommended_drug': 'Test Drug, Test Drug 2'
+        }
+        
+        # Send AJAX request
+        response = self.client.post(
+            reverse('pharmacy:request_prescription'), 
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        
+        # Check that a new prescription request was created
+        self.assertEqual(PrescriptionRequest.objects.count(), initial_count + 1)
+        
+        # Check that the response is JSON
+        self.assertEqual(response['Content-Type'], 'application/json')
+        
+        # Parse the JSON response
+        response_data = json.loads(response.content)
+        
+        # Check the response data
+        self.assertTrue(response_data['success'])
+        self.assertIn('redirect_url', response_data)
+        self.assertIn('message', response_data)
+        
+        # Get the latest prescription request
+        new_request = PrescriptionRequest.objects.latest('id')
+        
+        # Check the request data
+        self.assertEqual(new_request.patient, self.patient)
+        self.assertEqual(new_request.disease, 'Bệnh thử nghiệm')
+        self.assertEqual(new_request.recommended_drug, 'Test Drug, Test Drug 2')
+        self.assertEqual(new_request.status, 'pending')
+    
+    def test_regular_prescription_request(self):
+        """Test that regular prescription request works correctly"""
+        # Login as patient
+        self.client.login(username='testpatient', password='testpass123')
+        
+        # Initial count of prescription requests
+        initial_count = PrescriptionRequest.objects.count()
+        
+        # Submit a prescription request normally
+        data = {
+            'symptoms': f"{self.symptom.id}",
+            'disease': 'Test Disease',
+            'disease_name_vi': 'Bệnh thử nghiệm',
+            'recommended_drug': 'Test Drug, Test Drug 2'
+        }
+        
+        # Send regular request
+        response = self.client.post(reverse('pharmacy:request_prescription'), data)
+        
+        # Check that a new prescription request was created
+        self.assertEqual(PrescriptionRequest.objects.count(), initial_count + 1)
+        
+        # Get the latest prescription request
+        new_request = PrescriptionRequest.objects.latest('id')
+        
+        # Check redirect to request detail
+        self.assertRedirects(
+            response, 
+            reverse('pharmacy:prescription_request_detail', kwargs={'pk': new_request.pk})
+        )
+        
+        # Check the request data
+        self.assertEqual(new_request.patient, self.patient)
+        self.assertEqual(new_request.disease, 'Bệnh thử nghiệm')
+        self.assertEqual(new_request.recommended_drug, 'Test Drug, Test Drug 2')
+        self.assertEqual(new_request.status, 'pending')

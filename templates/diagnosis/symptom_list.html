@@ -14,27 +14,36 @@
     </div>
 
     {% if symptoms %}
-    <div class="row">
-        {% for symptom in symptoms %}
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title">{{ symptom.name }}</h5>
-                    <p class="card-text">{{ symptom.description }}</p>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Tên triệu chứng</th>
+                    <th>Mô tả</th>
                     {% if user.is_staff %}
-                    <div class="mt-3">
+                    <th>Thao tác</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for symptom in symptoms %}
+                <tr>
+                    <td>{{ symptom.name }}</td>
+                    <td>{{ symptom.description|default:'' }}</td>
+                    {% if user.is_staff %}
+                    <td>
                         <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editSymptomModal{{ symptom.pk }}">
                             <i class="fas fa-edit"></i> Sửa
                         </button>
                         <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteSymptomModal{{ symptom.pk }}">
                             <i class="fas fa-trash"></i> Xóa
                         </button>
-                    </div>
+                    </td>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% else %}
     <div class="alert alert-info">

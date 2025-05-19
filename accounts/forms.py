@@ -15,6 +15,24 @@ class UserRegistrationForm(UserCreationForm):
         help_text="Vui lòng nhập một địa chỉ email hợp lệ."
     )
     
+    first_name = forms.CharField(
+        label="Tên",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nhập tên của bạn'}),
+        required=False
+    )
+    
+    last_name = forms.CharField(
+        label="Họ",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nhập họ của bạn'}),
+        required=False
+    )
+    
+    phone_number = forms.CharField(
+        label="Số điện thoại",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nhập số điện thoại của bạn'}),
+        required=False
+    )
+    
     password1 = forms.CharField(
         label="Mật khẩu",
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Nhập mật khẩu'}),
@@ -29,7 +47,7 @@ class UserRegistrationForm(UserCreationForm):
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password1', 'password2']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
