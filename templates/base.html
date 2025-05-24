@@ -1575,8 +1575,8 @@
                                 <li>
                                     <a class="dropdown-item" href="{% url 'pharmacy:medicine_list' %}">
                                         <i class="fas fa-capsules"></i> Danh sách thuốc
-                                    </a>
-                                </li>
+                            </a>
+                        </li>
                                 
                                 <li>
                                     <a class="dropdown-item" href="{% url 'pharmacy:prescription_list' %}">
@@ -1715,17 +1715,17 @@
                                         <i class="fas fa-id-card"></i> Hồ sơ cá nhân
                                     </a>
                                 </li>
-                                <li>
+                                    <li>
                                     <a class="dropdown-item" href="{% url 'accounts:dashboard' %}">
                                         <i class="fas fa-tachometer-alt"></i> Dashboard
-                                    </a>
-                                </li>
+                                        </a>
+                                    </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="{% url 'accounts:logout' %}" class="d-inline px-2">
                                         {% csrf_token %}
                                         <button type="submit" class="dropdown-item">
-                                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
                                         </button>
                                     </form>
                                 </li>
@@ -1770,7 +1770,7 @@
                         {% elif message.tags == 'info' %}
                             <i class="fas fa-info-circle me-2 fs-5 text-info"></i>
                         {% endif %}
-                        {{ message }}
+                    {{ message }}
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -1783,7 +1783,7 @@
         </div>
         
         <div class="content-wrapper">
-            {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
         </div>
     </main>
 
@@ -1798,14 +1798,14 @@
                     <p class="text-white-50">Hệ thống quản lý nhà thuốc thông minh với trợ lý ảo hàng đầu tại Việt Nam.</p>
                     <div class="social-links">
                         <a href="#" class="me-2 action-btn">
-                            <i class="fab fa-facebook"></i>
-                        </a>
+                        <i class="fab fa-facebook"></i>
+                    </a>
                         <a href="#" class="me-2 action-btn">
-                            <i class="fab fa-twitter"></i>
-                        </a>
+                        <i class="fab fa-twitter"></i>
+                    </a>
                         <a href="#" class="me-2 action-btn">
-                            <i class="fab fa-instagram"></i>
-                        </a>
+                        <i class="fab fa-instagram"></i>
+                    </a>
                         <a href="#" class="me-2 action-btn">
                             <i class="fab fa-linkedin"></i>
                         </a>
@@ -2325,7 +2325,7 @@
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="registrationModalLabel">Đăng ký tài khoản</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+            </div>
                 <div class="modal-body">
                     <form method="post" action="{% url 'accounts:register' %}">
                         {% csrf_token %}
@@ -2334,7 +2334,7 @@
                             <div class="col-md-6">
                                 <label for="modal_username" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
                                 <input type="text" id="modal_username" name="username" class="form-control" required>
-                            </div>
+            </div>
                             <div class="col-md-6">
                                 <label for="modal_email" class="form-label">Email <span class="text-danger">*</span></label>
                                 <input type="email" id="modal_email" name="email" class="form-control" required>
@@ -2370,12 +2370,12 @@
                         
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success">Đăng ký</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
+            </div>
                 <div class="modal-footer">
                     <p class="mb-0">Đã có tài khoản? <a href="{% url 'accounts:login' %}" class="text-success">Đăng nhập ngay</a></p>
-                </div>
+        </div>
             </div>
         </div>
     </div>

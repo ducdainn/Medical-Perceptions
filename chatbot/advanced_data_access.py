@@ -4,12 +4,12 @@ This extends the functionality provided in utils.py.
 """
 
 from django.db.models import Q, Count, Sum, Avg, F
+import re
 from diagnosis.models import Symptom, Disease, Diagnosis
 from pharmacy.models import Drug, DrugCategory, Medicine, Inventory, Prescription, Transaction, PrescriptionItem
 from accounts.models import User
 from django.conf import settings
 import json
-import re
 
 class AdvancedChatbotDataAccess:
     """
@@ -419,4 +419,319 @@ class AdvancedChatbotDataAccess:
                         
                         potential_symptoms.append(symptom_context.strip())
         
-        return list(set(potential_symptoms)) 
+        return list(set(potential_symptoms))
+
+    @staticmethod
+    def get_inventory_data_for_chatbot(query=None):
+        """
+        Get comprehensive inventory data for the chatbot to answer customer questions.
+        If query is provided, filter results based on the query.
+        
+        Args:
+            query (str, optional): Optional search term to filter inventory data
+            
+        Returns:
+            list: List of inventory items with detailed information
+        """
+        inventory_query = Inventory.objects.all()
+        
+        # If a search query is provided, filter the results
+        if query:
+            inventory_query = inventory_query.filter(
+                Q(medicine__name__icontains=query) | 
+                Q(medicine__description__icontains=query)
+            )
+        
+        # Limit results to manage response size
+        inventory_items = inventory_query[:25]
+        
+        results = []
+        for item in inventory_items:
+            status = "Còn hàng"
+            if item.quantity == 0:
+                status = "Hết hàng"
+            elif item.quantity <= item.min_quantity:
+                status = "Sắp hết hàng"
+                
+            results.append({
+                'id': item.id,
+                'thuoc': item.medicine.name,
+                'so_luong': item.quantity,
+                'don_vi': item.unit,
+                'so_luong_toi_thieu': item.min_quantity,
+                'gia': str(item.medicine.price),
+                'trang_thai': status,
+                'mo_ta': item.medicine.description or "Không có mô tả",
+            })
+            
+        return results
+        
+    @staticmethod
+    def format_inventory_response(inventory_items):
+        """
+        Format inventory data into a human-readable response for the chatbot.
+        
+        Args:
+            inventory_items (list): List of inventory items
+            
+        Returns:
+            str: Formatted response for the chatbot
+        """
+        if not inventory_items:
+            return "Không tìm thấy thông tin về thuốc trong kho. Vui lòng thử lại với từ khóa khác."
+        
+        response = "Đây là thông tin về thuốc trong kho:\n\n"
+        
+        for item in inventory_items:
+            response += f"- {item['thuoc']}:\n"
+            response += f"  • Số lượng: {item['so_luong']} {item['don_vi']}\n"
+            response += f"  • Giá: {item['gia']} VNĐ\n"
+            response += f"  • Trạng thái: {item['trang_thai']}\n"
+            if item['mo_ta'] != "Không có mô tả":
+                response += f"  • Mô tả: {item['mo_ta']}\n"
+            response += "\n"
+            
+        return response.strip()
+
+    @staticmethod
+    def process_inventory_query(message):
+        """
+        Process a user query about inventory.
+        Extract search terms and return relevant inventory data.
+        
+        Args:
+            message (str): The user's message
+            
+        Returns:
+            str: Response with inventory information
+        """
+        # Keywords that might indicate what medicine the user is asking about
+        search_terms = []
+        
+        # Common search patterns in Vietnamese
+        patterns = [
+            r'thuốc\s+(.+?)(?:\s+có|trong|\?|$)',  # "thuốc X có..."
+            r'có\s+thuốc\s+(.+?)(?:\s+không|\?|$)',  # "có thuốc X không"
+            r'thông tin\s+(?:về\s+)?thuốc\s+(.+?)(?:\s+không|\?|$)',  # "thông tin về thuốc X"
+            r'tìm\s+(?:thuốc|thông tin)\s+(.+?)(?:\s+không|\?|$)',  # "tìm thuốc X"
+            r'kiểm tra\s+(?:thuốc|kho)\s+(.+?)(?:\s+không|\?|$)',  # "kiểm tra thuốc X"
+        ]
+        
+        # Try to extract search terms using patterns
+        for pattern in patterns:
+            matches = re.findall(pattern, message.lower())
+            if matches:
+                search_terms.extend(matches)
+        
+        # If no structured search terms found, extract potential medicine names
+        # This is a simple extraction based on word position after keywords
+        if not search_terms:
+            words = message.lower().split()
+            for i, word in enumerate(words):
+                if word in ['thuốc', 'medicine', 'drug', 'kho', 'inventory'] and i < len(words) - 1:
+                    search_terms.append(words[i+1])
+        
+        # If still no search terms found, return all inventory items
+        if search_terms:
+            # Use the first found term for search
+            inventory_items = AdvancedChatbotDataAccess.get_inventory_data_for_chatbot(search_terms[0])
+        else:
+            inventory_items = AdvancedChatbotDataAccess.get_inventory_data_for_chatbot()
+            
+        return AdvancedChatbotDataAccess.format_inventory_response(inventory_items)
+
+    @staticmethod
+    def search_medication_in_inventory(med_name):
+        """
+        Search for a specific medication in inventory by name.
+        Performs an exact search for the medication name.
+        
+        Args:
+            med_name (str): Name of the medication to search for
+            
+        Returns:
+            list: List of inventory items matching the medication name
+        """
+        results = []
+        
+        try:
+            # Search in Medicine model
+            medicines = Medicine.objects.filter(name__icontains=med_name)[:10]
+            
+            for medicine in medicines:
+                try:
+                    inventory = Inventory.objects.get(medicine=medicine)
+                    expiry_date = "N/A"
+                    if hasattr(inventory, 'expiry_date') and inventory.expiry_date:
+                        try:
+                            expiry_date = inventory.expiry_date.strftime('%d/%m/%Y')
+                        except:
+                            expiry_date = "N/A"
+                        
+                    results.append({
+                        'id': medicine.id,
+                        'name': medicine.name,
+                        'quantity': inventory.quantity,
+                        'unit': inventory.unit if hasattr(inventory, 'unit') else 'đơn vị',
+                        'price': str(medicine.price) if hasattr(medicine, 'price') else 'Không có thông tin',
+                        'expiry': expiry_date,
+                        'description': medicine.description or ""
+                    })
+                except Inventory.DoesNotExist:
+                    # No inventory record exists
+                    results.append({
+                        'id': medicine.id,
+                        'name': medicine.name,
+                        'quantity': 0,
+                        'unit': 'đơn vị',
+                        'price': str(medicine.price) if hasattr(medicine, 'price') else 'Không có thông tin',
+                        'description': medicine.description or ""
+                    })
+                except Exception as e:
+                    print(f"Error processing medicine {medicine.name}: {str(e)}")
+        except Exception as e:
+            print(f"Error searching medicines: {str(e)}")
+        
+        # If no results in Medicine, search in Drug model
+        if not results:
+            try:
+                drugs = Drug.objects.filter(name__icontains=med_name)[:10]
+                
+                for drug in drugs:
+                    try:
+                        results.append({
+                            'id': drug.id,
+                            'name': drug.name,
+                            'quantity': drug.stock if hasattr(drug, 'stock') else 0,
+                            'unit': 'đơn vị',
+                            'price': str(drug.price) if hasattr(drug, 'price') else 'Không có thông tin',
+                            'description': drug.description or ""
+                        })
+                    except Exception as e:
+                        print(f"Error processing drug {drug.name}: {str(e)}")
+            except Exception as e:
+                print(f"Error searching drugs: {str(e)}")
+        
+        return results
+    
+    @staticmethod
+    def fuzzy_search_medication(med_name):
+        """
+        Perform a fuzzy search for medications in inventory.
+        This method is less strict and can find medications even with partial or
+        misspelled names, by searching in name, description, and category.
+        
+        Args:
+            med_name (str): Name or partial name of the medication
+            
+        Returns:
+            list: List of inventory items that might match the medication
+        """
+        results = []
+        
+        # Break down the med_name into words for more flexible matching
+        search_terms = med_name.lower().split()
+        
+        # Build a query for Medicine model (without category field)
+        medicine_query = Q()
+        for term in search_terms:
+            if len(term) >= 3:  # Only search for terms with at least 3 characters
+                medicine_query |= Q(name__icontains=term)
+                medicine_query |= Q(description__icontains=term)
+                # Note: category field is removed as it's not available in the model
+        
+        # Search in Medicine model with the query
+        if medicine_query:
+            try:
+                medicines = Medicine.objects.filter(medicine_query).distinct()[:10]
+                
+                for medicine in medicines:
+                    try:
+                        inventory = Inventory.objects.get(medicine=medicine)
+                        results.append({
+                            'id': medicine.id,
+                            'name': medicine.name,
+                            'quantity': inventory.quantity,
+                            'unit': inventory.unit,
+                            'price': str(medicine.price),
+                            'expiry': inventory.expiry_date.strftime('%d/%m/%Y') if hasattr(inventory, 'expiry_date') and inventory.expiry_date else 'N/A',
+                            'description': medicine.description or "",
+                            'match_type': 'fuzzy'
+                        })
+                    except Inventory.DoesNotExist:
+                        results.append({
+                            'id': medicine.id,
+                            'name': medicine.name,
+                            'quantity': 0,
+                            'unit': 'đơn vị',
+                            'price': str(medicine.price),
+                            'description': medicine.description or "",
+                            'match_type': 'fuzzy'
+                        })
+            except Exception as e:
+                print(f"Error in fuzzy medicine search: {str(e)}")
+        
+        # Build a query for Drug model (without category field)
+        drug_query = Q()
+        for term in search_terms:
+            if len(term) >= 3:  # Only search for terms with at least 3 characters
+                drug_query |= Q(name__icontains=term)
+                drug_query |= Q(description__icontains=term)
+                # Note: category field is removed as it might not be available
+        
+        # Search in Drug model with the complex query
+        if drug_query and len(results) < 10:
+            # Only search drugs if we don't have enough results yet
+            try:
+                drugs = Drug.objects.filter(drug_query).distinct()[:10]
+                
+                for drug in drugs:
+                    results.append({
+                        'id': drug.id,
+                        'name': drug.name,
+                        'quantity': drug.stock,
+                        'unit': 'đơn vị',
+                        'price': str(drug.price),
+                        'description': drug.description or "",
+                        'match_type': 'fuzzy'
+                    })
+            except Exception as e:
+                print(f"Error in fuzzy drug search: {str(e)}")
+        
+        # Search for similar medication names (without using category)
+        if not results:
+            # Try to find medications with similar names
+            try:
+                # First try to find an exact match
+                exact_med = Medicine.objects.filter(name__icontains=med_name).first()
+                if exact_med:
+                    # Find other medications with similar names
+                    similar_med_query = Q(name__icontains=med_name.split()[0]) if med_name.split() else Q(name__icontains=med_name)
+                    similar_meds = Medicine.objects.filter(similar_med_query).exclude(id=exact_med.id)[:5]
+                    
+                    for medicine in similar_meds:
+                        try:
+                            inventory = Inventory.objects.get(medicine=medicine)
+                            results.append({
+                                'id': medicine.id,
+                                'name': medicine.name,
+                                'quantity': inventory.quantity,
+                                'unit': inventory.unit,
+                                'price': str(medicine.price),
+                                'description': medicine.description or "",
+                                'match_type': 'related'
+                            })
+                        except Inventory.DoesNotExist:
+                            results.append({
+                                'id': medicine.id,
+                                'name': medicine.name,
+                                'quantity': 0,
+                                'unit': 'đơn vị',
+                                'price': str(medicine.price),
+                                'description': medicine.description or "",
+                                'match_type': 'related'
+                            })
+            except Exception as e:
+                print(f"Error finding similar medications: {str(e)}")
+        
+        return results 
