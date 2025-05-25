@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn thuốc #{{ prescription.id }} - ReViCARE</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .logo span {
+            color: #198754;
+        }
+        .prescription-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .hospital-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 30px 0;
+            text-transform: uppercase;
+            color: #0d6efd;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            width: 48%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+            color: #495057;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .info-box strong {
+            font-weight: bold;
+            min-width: 120px;
+            display: inline-block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .notes {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 30px;
+            background-color: #f8f9fa;
+        }
+        .notes h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #495057;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        .signature-line {
+            margin-top: 70px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            font-weight: bold;
+        }
+        .date {
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .print-button:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">In đơn thuốc</button>
+    
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="logo">ReVi<span>CARE</span></div>
+                <div class="hospital-info">
+                    Trung tâm Y tế ReViCARE<br>
+                    Địa chỉ: 42 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM<br>
+                    Điện thoại: (028) 1234 5678 | Email: info@revicare.vn
+                </div>
+            </div>
+            <div class="prescription-id">
+                ĐƠN THUỐC #{{ prescription.id }}<br>
+                <small>{{ prescription.created_at|date:"d/m/Y H:i" }}</small>
+            </div>
+        </div>
+        
+        <div class="title">Đơn thuốc</div>
+        
+        <div class="info-section">
+            <div class="info-box">
+                <h3>Thông tin bệnh nhân</h3>
+                <p><strong>Họ tên:</strong> {{ prescription.diagnosis.patient.get_full_name }}</p>
+                <p><strong>Ngày sinh:</strong> {{ prescription.diagnosis.patient.date_of_birth|date:"d/m/Y"|default:"Chưa cập nhật" }}</p>
+                <p><strong>Số điện thoại:</strong> {{ prescription.diagnosis.patient.phone_number|default:"Chưa cập nhật" }}</p>
+                <p><strong>Email:</strong> {{ prescription.diagnosis.patient.email }}</p>
+            </div>
+            
+            <div class="info-box">
+                <h3>Thông tin chẩn đoán</h3>
+                <p><strong>Bệnh:</strong> {{ prescription.diagnosis.disease.name }}</p>
+                <p><strong>Triệu chứng:</strong> 
+                    {% for symptom in prescription.diagnosis.symptoms.all %}
+                        {{ symptom.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+                <p><strong>Bác sĩ:</strong> {{ prescription.doctor.get_full_name }}</p>
+                <p><strong>Ngày kê đơn:</strong> {{ prescription.created_at|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%">STT</th>
+                    <th style="width: 25%">Tên thuốc</th>
+                    <th style="width: 15%">Liều lượng</th>
+                    <th style="width: 15%">Số lượng</th>
+                    <th style="width: 40%">Hướng dẫn sử dụng</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in prescription.items.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <strong>{{ item.medication.name }}</strong><br>
+                        <small>{{ item.medication.category.name }}</small>
+                    </td>
+                    <td>{{ item.dosage }}</td>
+                    <td>{{ item.quantity }} {{ item.medication.unit }}</td>
+                    <td>{{ item.instructions }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if prescription.notes %}
+        <div class="notes">
+            <h3>Ghi chú:</h3>
+            <p>{{ prescription.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="date">TP.HCM, ngày {{ prescription.created_at|date:"d" }} tháng {{ prescription.created_at|date:"m" }} năm {{ prescription.created_at|date:"Y" }}</div>
+                <div>Người nhận đơn thuốc</div>
+                <div class="signature-line">{{ prescription.diagnosis.patient.get_full_name }}</div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="date">TP.HCM, ngày {{ prescription.created_at|date:"d" }} tháng {{ prescription.created_at|date:"m" }} năm {{ prescription.created_at|date:"Y" }}</div>
+                <div>Bác sĩ kê đơn</div>
+                <div class="signature-line">{{ prescription.doctor.get_full_name }}</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Đơn thuốc có giá trị trong vòng 7 ngày kể từ ngày kê đơn.</p>
+            <p>Vui lòng mang theo đơn thuốc này khi đến nhận thuốc tại nhà thuốc.</p>
+            <p>&copy; {% now "Y" %} ReViCARE - Hệ thống quản lý phòng khám</p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto print when page loads
+        window.onload = function() {
+            // Delay printing to ensure page is fully loaded
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

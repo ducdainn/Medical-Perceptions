@@ -29,7 +29,7 @@
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="age" class="form-label">Tuổi</label>
-                                        <input type="number" class="form-control form-select py-0" id="age" name="age" min="1" max="120" value="{{ age|default:'' }}" required style="height: 38px;">
+                                        <input type="number" class="form-control" id="age" name="age" min="1" max="120" value="{{ age|default:'' }}" required>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -58,13 +58,35 @@
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Triệu chứng</label>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="symptomSearch" placeholder="Tìm kiếm triệu chứng...">
+                                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-end">
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-primary" id="sortAZ">
+                                                <i class="fas fa-sort-alpha-down"></i> A-Z
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="sortZA">
+                                                <i class="fas fa-sort-alpha-up"></i> Z-A
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-12">
                                     <div class="card">
                                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                                            <div class="row">
+                                            <div class="row" id="symptomsContainer">
                                                 {% for symptom in symptoms %}
-                                                <div class="col-md-4 mb-2">
+                                                <div class="col-md-4 mb-2 symptom-item" data-name="{{ symptom.name|lower }}">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" id="symptom_{{ symptom.id }}" 
                                                             name="symptoms" value="{{ symptom.id }}"
@@ -96,4 +118,75 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const symptomsContainer = document.getElementById('symptomsContainer');
+        const symptomItems = document.querySelectorAll('.symptom-item');
+        const searchInput = document.getElementById('symptomSearch');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const sortAZBtn = document.getElementById('sortAZ');
+        const sortZABtn = document.getElementById('sortZA');
+        
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            symptomItems.forEach(item => {
+                const symptomName = item.getAttribute('data-name');
+                if (symptomName.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // Clear search
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            symptomItems.forEach(item => {
+                item.style.display = '';
+            });
+        });
+        
+        // Sort functions
+        function sortSymptoms(direction) {
+            const itemsArray = Array.from(symptomItems);
+            
+            itemsArray.sort((a, b) => {
+                const nameA = a.getAttribute('data-name');
+                const nameB = b.getAttribute('data-name');
+                
+                if (direction === 'asc') {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
+                }
+            });
+            
+            // Clear container
+            while (symptomsContainer.firstChild) {
+                symptomsContainer.removeChild(symptomsContainer.firstChild);
+            }
+            
+            // Append sorted items
+            itemsArray.forEach(item => {
+                symptomsContainer.appendChild(item);
+            });
+        }
+        
+        // Sort A-Z
+        sortAZBtn.addEventListener('click', function() {
+            sortSymptoms('asc');
+        });
+        
+        // Sort Z-A
+        sortZABtn.addEventListener('click', function() {
+            sortSymptoms('desc');
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %} 

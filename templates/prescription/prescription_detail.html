@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết đơn thuốc - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'diagnosis:list' %}">Chẩn đoán</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'diagnosis:detail' prescription.diagnosis.pk %}">Chi tiết chẩn đoán</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Đơn thuốc #{{ prescription.id }}</li>
+        </ol>
+    </nav>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0"><i class="fas fa-prescription me-2"></i>Đơn thuốc #{{ prescription.id }}</h3>
+            <div>
+                {% if user.is_staff and not prescription.is_dispensed %}
+                <a href="{% url 'prescription:update' prescription.pk %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-edit"></i> Chỉnh sửa
+                </a>
+                <a href="{% url 'prescription:dispense' prescription.pk %}" class="btn btn-success btn-sm ms-2">
+                    <i class="fas fa-pills"></i> Cấp phát
+                </a>
+                {% endif %}
+                <a href="{% url 'prescription:print' prescription.pk %}" class="btn btn-light btn-sm ms-2" target="_blank">
+                    <i class="fas fa-print"></i> In đơn
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Thông tin bệnh nhân</h5>
+                    <p>
+                        <strong>Họ tên:</strong> {{ prescription.diagnosis.patient.get_full_name }}<br>
+                        <strong>Ngày sinh:</strong> {{ prescription.diagnosis.patient.date_of_birth|date:"d/m/Y"|default:"Chưa cập nhật" }}<br>
+                        <strong>Số điện thoại:</strong> {{ prescription.diagnosis.patient.phone_number }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Thông tin đơn thuốc</h5>
+                    <p>
+                        <strong>Ngày kê:</strong> {{ prescription.created_at|date:"d/m/Y H:i" }}<br>
+                        <strong>Bác sĩ kê đơn:</strong> {{ prescription.doctor.get_full_name }}<br>
+                        <strong>Trạng thái:</strong> 
+                        {% if prescription.is_dispensed %}
+                            <span class="badge bg-success">Đã cấp phát</span>
+                        {% else %}
+                            <span class="badge bg-warning">Chờ cấp phát</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <h5 class="border-bottom pb-2 mb-3">Danh sách thuốc</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th style="width: 30%">Tên thuốc</th>
+                            <th style="width: 15%">Liều lượng</th>
+                            <th style="width: 10%">Số lượng</th>
+                            <th style="width: 40%">Hướng dẫn sử dụng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in prescription.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ item.medication.name }}</strong>
+                                <div class="small text-muted">{{ item.medication.category.name }}</div>
+                            </td>
+                            <td>{{ item.dosage }}</td>
+                            <td>{{ item.quantity }} {{ item.medication.unit }}</td>
+                            <td>{{ item.instructions }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if prescription.notes %}
+            <div class="mt-4">
+                <h5 class="border-bottom pb-2">Ghi chú</h5>
+                <div class="p-3 bg-light rounded">
+                    {{ prescription.notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if prescription.is_dispensed %}
+            <div class="mt-4">
+                <h5 class="border-bottom pb-2">Thông tin cấp phát</h5>
+                <p>
+                    <strong>Ngày cấp phát:</strong> {{ prescription.dispensed_at|date:"d/m/Y H:i" }}<br>
+                    <strong>Người cấp phát:</strong> {{ prescription.dispensed_by.get_full_name }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if user.is_staff and not prescription.is_dispensed %}
+    <div class="d-flex justify-content-end mb-4">
+        <form method="post" action="{% url 'prescription:delete' prescription.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa đơn thuốc này?');">
+                <i class="fas fa-trash"></i> Xóa đơn thuốc
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

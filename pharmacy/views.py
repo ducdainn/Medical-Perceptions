@@ -17,6 +17,8 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models.functions import TruncDay, TruncMonth
+from django.db import models
+from django.db.models import Subquery, OuterRef
 
 User = get_user_model()
 
@@ -37,11 +39,42 @@ def pharmacy_dashboard(request):
 
 @medicine_view_only
 def medicine_list(request):
-    medicines = Medicine.objects.all().order_by('-created_at')
-    return render(request, 'pharmacy/medicine_list.html', {
+    # Get query parameters
+    sort_by = request.GET.get('sort', 'created_at')  # Default sort by created date
+    order_by = request.GET.get('order', 'desc')  # Default order desc
+    
+    # Start with all medicines with inventory prefetch
+    medicines = Medicine.objects.select_related().prefetch_related('inventory_set').all()
+    
+    # Add quantity annotation from first inventory record
+    inventory_subquery = Inventory.objects.filter(medicine=OuterRef('pk')).values('quantity')[:1]
+    medicines = medicines.annotate(
+        inventory_quantity=Subquery(inventory_subquery)
+    )
+    
+    # Handle sorting
+    if sort_by == 'created_at':
+        if order_by == 'asc':
+            medicines = medicines.order_by('created_at')
+        else:
+            medicines = medicines.order_by('-created_at')
+    elif sort_by == 'quantity':
+        if order_by == 'asc':
+            medicines = medicines.order_by('inventory_quantity', 'name')
+        else:
+            medicines = medicines.order_by('-inventory_quantity', 'name')
+    else:
+        # Default to created_at desc
+        medicines = medicines.order_by('-created_at')
+    
+    context = {
         'medicines': medicines,
-        'title': 'Danh sách thuốc'
-    })
+        'title': 'Danh sách thuốc',
+        'sort_by': sort_by,
+        'order_by': order_by,
+    }
+    
+    return render(request, 'pharmacy/medicine_list.html', context)
 
 @pharmacist_required
 def medicine_create(request):
@@ -95,12 +128,66 @@ def medicine_delete(request, pk):
 
 @login_required
 def inventory_management(request):
-    inventory = Inventory.objects.all()
+    # Get all inventory items
+    inventory_list = Inventory.objects.select_related('medicine').all()
+    
+    # Handle search query
+    search_query = request.GET.get('search', '')
+    if search_query:
+        inventory_list = inventory_list.filter(
+            Q(medicine__name__icontains=search_query) |
+            Q(medicine__description__icontains=search_query) |
+            Q(unit__icontains=search_query)
+        )
+    
+    # Handle status filter
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'low_stock':
+        # Filter items where quantity <= min_quantity
+        inventory_list = inventory_list.filter(quantity__lte=models.F('min_quantity'))
+    elif status_filter == 'in_stock':
+        # Filter items where quantity > min_quantity
+        inventory_list = inventory_list.filter(quantity__gt=models.F('min_quantity'))
+    
+    # Handle sorting
+    sort_by = request.GET.get('sort', 'name')  # Default sort by medicine name
+    if sort_by == 'quantity_asc':
+        inventory_list = inventory_list.order_by('quantity')
+    elif sort_by == 'quantity_desc':
+        inventory_list = inventory_list.order_by('-quantity')
+    elif sort_by == 'name':
+        inventory_list = inventory_list.order_by('medicine__name')
+    elif sort_by == 'status':
+        # Sort by status (low stock first)
+        inventory_list = inventory_list.annotate(
+            is_low_stock=models.Case(
+                models.When(quantity__lte=models.F('min_quantity'), then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ).order_by('-is_low_stock', 'medicine__name')
+    
+    # Get inventory statistics
+    all_inventory = Inventory.objects.select_related('medicine').all()
+    total_items = all_inventory.count()
+    low_stock_items = all_inventory.filter(quantity__lte=models.F('min_quantity')).count()
+    in_stock_items = total_items - low_stock_items
+    
+    # Get medicines for the add form
     medicines = Medicine.objects.all()
-    return render(request, 'pharmacy/inventory.html', {
-        'inventory': inventory,
-        'medicines': medicines
-    })
+    
+    context = {
+        'inventory': inventory_list,
+        'medicines': medicines,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'sort_by': sort_by,
+        'total_items': total_items,
+        'low_stock_items': low_stock_items,
+        'in_stock_items': in_stock_items,
+    }
+    
+    return render(request, 'pharmacy/inventory.html', context)
 
 @login_required
 def inventory_create(request):
@@ -450,7 +537,7 @@ def delete_prescription_request(request, pk):
 @login_required
 def prescription_create(request):
     """Tạo đơn thuốc mới, có thể từ yêu cầu đã được duyệt"""
-    if not (request.user.is_pharmacist or request.user.is_staff or request.user.is_doctor):
+    if not (request.user.is_pharmacist or request.user.is_staff):
         messages.error(request, 'Bạn không có quyền thực hiện hành động này.')
         return redirect('pharmacy:prescription_list')
     

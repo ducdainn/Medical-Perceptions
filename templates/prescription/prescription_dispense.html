@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Cấp phát thuốc - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'prescription:list' %}">Đơn thuốc</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'prescription:detail' prescription.pk %}">Chi tiết đơn thuốc</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Cấp phát thuốc</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0"><i class="fas fa-pills me-2"></i>Cấp phát thuốc</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>Bạn đang cấp phát thuốc cho bệnh nhân <strong>{{ prescription.diagnosis.patient.get_full_name }}</strong>. 
+                Hãy kiểm tra kỹ thông tin trước khi xác nhận.
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Thông tin bệnh nhân</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Họ tên:</strong> {{ prescription.diagnosis.patient.get_full_name }}</p>
+                            <p><strong>Ngày sinh:</strong> {{ prescription.diagnosis.patient.date_of_birth|date:"d/m/Y"|default:"Chưa cập nhật" }}</p>
+                            <p><strong>Số điện thoại:</strong> {{ prescription.diagnosis.patient.phone_number }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Thông tin đơn thuốc</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Đơn thuốc ID:</strong> #{{ prescription.id }}</p>
+                            <p><strong>Ngày kê đơn:</strong> {{ prescription.created_at|date:"d/m/Y H:i" }}</p>
+                            <p><strong>Bác sĩ kê đơn:</strong> {{ prescription.doctor.get_full_name }}</p>
+                            <p><strong>Bệnh:</strong> {{ prescription.diagnosis.disease.name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="border-bottom pb-2 mb-3">Danh sách thuốc cần cấp phát</h5>
+            <form method="post" id="dispense-form">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%">#</th>
+                                <th style="width: 30%">Tên thuốc</th>
+                                <th style="width: 10%">Số lượng cần cấp</th>
+                                <th style="width: 15%">Tồn kho</th>
+                                <th style="width: 10%">Trạng thái</th>
+                                <th style="width: 30%">Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in prescription.items.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ item.medication.name }}</strong>
+                                    <div class="small text-muted">{{ item.medication.category.name }}</div>
+                                </td>
+                                <td>{{ item.quantity }} {{ item.medication.unit }}</td>
+                                <td>
+                                    {% if item.medication.inventory_quantity >= item.quantity %}
+                                        <span class="text-success">{{ item.medication.inventory_quantity }} {{ item.medication.unit }}</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ item.medication.inventory_quantity }} {{ item.medication.unit }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.medication.inventory_quantity >= item.quantity %}
+                                        <span class="badge bg-success">Đủ</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Thiếu</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.medication.inventory_quantity < item.quantity %}
+                                        <div class="form-group">
+                                            <input type="text" name="note_{{ item.id }}" class="form-control form-control-sm" placeholder="Ghi chú thiếu thuốc...">
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-warning mt-4" id="shortage-warning" {% if all_available %}style="display: none;"{% endif %}>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Cảnh báo:</strong> Một số thuốc không đủ số lượng trong kho. Vui lòng liên hệ bác sĩ để điều chỉnh đơn thuốc hoặc bổ sung thuốc vào kho.
+                </div>
+                
+                <div class="form-group mt-4">
+                    <label for="{{ form.notes.id_for_label }}" class="form-label">Ghi chú cấp phát:</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.notes.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% url 'prescription:detail' prescription.pk %}" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-success" {% if not all_available %}disabled{% endif %}>
+                        <i class="fas fa-check-circle me-1"></i>Xác nhận cấp phát
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Enable submit button if all items have notes when they are short
+        $('input[name^="note_"]').on('input', function() {
+            let allNotesEntered = true;
+            
+            $('input[name^="note_"]').each(function() {
+                if ($(this).val().trim() === '') {
+                    allNotesEntered = false;
+                    return false;
+                }
+            });
+            
+            if (allNotesEntered) {
+                $('button[type="submit"]').prop('disabled', false);
+            } else {
+                $('button[type="submit"]').prop('disabled', true);
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -11,6 +11,33 @@
         {% endif %}
     </div>
 
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="input-group mb-3">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm theo tên hoặc mô tả thuốc...">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="sortSelect" class="form-select">
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Ngày tạo</option>
+                        <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Số lượng tồn kho</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select id="orderSelect" class="form-select">
+                        <option value="desc" {% if order_by == 'desc' %}selected{% endif %}>Giảm dần</option>
+                        <option value="asc" {% if order_by == 'asc' %}selected{% endif %}>Tăng dần</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
@@ -25,9 +52,14 @@
                             <th>Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="medicineTableBody">
                         {% for medicine in medicines %}
-                        <tr>
+                        <tr class="medicine-row" 
+                            data-name="{{ medicine.name|lower }}" 
+                            data-description="{{ medicine.description|lower }}" 
+                            data-price="{{ medicine.price }}"
+                            data-created-at="{{ medicine.created_at|date:'Y-m-d H:i:s' }}"
+                            data-quantity="{% with inventory=medicine.inventory_set.first %}{% if inventory %}{{ inventory.quantity }}{% else %}0{% endif %}{% endwith %}">
                             <td>{{ medicine.name }}</td>
                             <td>{{ medicine.description|truncatewords:20 }}</td>
                             <td>{{ medicine.price|floatformat:0 }} VNĐ</td>
@@ -85,7 +117,10 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
+                        <tr id="noResultsRow" style="display: none;">
+                            <td colspan="6" class="text-center">Không tìm thấy kết quả phù hợp</td>
+                        </tr>
+                        <tr id="emptyRow">
                             <td colspan="6" class="text-center">Chưa có thuốc nào</td>
                         </tr>
                         {% endfor %}
@@ -95,4 +130,173 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const sortSelect = document.getElementById('sortSelect');
+        const orderSelect = document.getElementById('orderSelect');
+        const medicineTableBody = document.getElementById('medicineTableBody');
+        
+        let medicineRows = Array.from(document.querySelectorAll('.medicine-row'));
+        const noResultsRow = document.getElementById('noResultsRow');
+        const emptyRow = document.getElementById('emptyRow');
+        
+        // Auto-update function - sends AJAX request to update the page
+        function autoUpdate() {
+            const sortBy = sortSelect.value;
+            const orderBy = orderSelect.value;
+            
+            const url = new URL(window.location);
+            url.searchParams.set('sort', sortBy);
+            url.searchParams.set('order', orderBy);
+            
+            // Update URL without refresh
+            window.history.pushState({}, '', url);
+            
+            // Send AJAX request to get updated content
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Extract the table body content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newTableBody = doc.getElementById('medicineTableBody');
+                
+                if (newTableBody) {
+                    medicineTableBody.innerHTML = newTableBody.innerHTML;
+                    // Update medicineRows array
+                    medicineRows = Array.from(document.querySelectorAll('.medicine-row'));
+                }
+            })
+            .catch(error => {
+                console.error('Error updating data:', error);
+                // Fallback to client-side sorting
+                clientSideSort(sortBy, orderBy);
+            });
+        }
+        
+        // Client-side sorting fallback
+        function clientSideSort(criterion, direction) {
+            const rowsArray = Array.from(medicineRows);
+            
+            rowsArray.sort((a, b) => {
+                let valueA, valueB;
+                
+                if (criterion === 'created_at') {
+                    valueA = new Date(a.getAttribute('data-created-at'));
+                    valueB = new Date(b.getAttribute('data-created-at'));
+                    
+                    if (direction === 'asc') {
+                        return valueA - valueB;
+                    } else {
+                        return valueB - valueA;
+                    }
+                } else if (criterion === 'quantity') {
+                    valueA = parseInt(a.getAttribute('data-quantity')) || 0;
+                    valueB = parseInt(b.getAttribute('data-quantity')) || 0;
+                    
+                    if (direction === 'asc') {
+                        return valueA - valueB;
+                    } else {
+                        return valueB - valueA;
+                    }
+                } else if (criterion === 'name') {
+                    valueA = a.getAttribute('data-name');
+                    valueB = b.getAttribute('data-name');
+                    
+                    if (direction === 'asc') {
+                        return valueA.localeCompare(valueB);
+                    } else {
+                        return valueB.localeCompare(valueA);
+                    }
+                } else if (criterion === 'price') {
+                    valueA = parseFloat(a.getAttribute('data-price'));
+                    valueB = parseFloat(b.getAttribute('data-price'));
+                    
+                    if (direction === 'asc') {
+                        return valueA - valueB;
+                    } else {
+                        return valueB - valueA;
+                    }
+                }
+                return 0;
+            });
+            
+            // Clear table body and add sorted rows
+            medicineTableBody.innerHTML = '';
+            
+            // Add sorted rows
+            rowsArray.forEach(row => {
+                medicineTableBody.appendChild(row);
+            });
+            
+            // Add special rows at the end
+            if (noResultsRow) {
+                medicineTableBody.appendChild(noResultsRow);
+            }
+            if (emptyRow) {
+                medicineTableBody.appendChild(emptyRow);
+            }
+            
+            // Update medicineRows array
+            medicineRows = rowsArray;
+        }
+        
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let hasResults = false;
+            
+            medicineRows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const description = row.getAttribute('data-description');
+                
+                if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                    row.style.display = '';
+                    hasResults = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show/hide no results message
+            if (medicineRows.length > 0) {
+                if (hasResults) {
+                    if (noResultsRow) noResultsRow.style.display = 'none';
+                    if (emptyRow) emptyRow.style.display = 'none';
+                } else {
+                    if (noResultsRow) noResultsRow.style.display = '';
+                    if (emptyRow) emptyRow.style.display = 'none';
+                }
+            }
+        });
+        
+        // Clear search
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            medicineRows.forEach(row => {
+                row.style.display = '';
+            });
+            if (noResultsRow) noResultsRow.style.display = 'none';
+            if (emptyRow && medicineRows.length === 0) emptyRow.style.display = '';
+        });
+        
+        // Sort event listeners with auto-update
+        sortSelect.addEventListener('change', function() {
+            autoUpdate();
+        });
+        
+        orderSelect.addEventListener('change', function() {
+            autoUpdate();
+        });
+    });
+</script>
 {% endblock %} 

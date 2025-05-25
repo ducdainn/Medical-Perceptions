@@ -33,6 +33,19 @@ class UserRegistrationForm(UserCreationForm):
         required=False
     )
     
+    user_type = forms.ChoiceField(
+        label="Vai trò",
+        choices=[
+            ('admin', 'Quản trị viên'),
+            ('web_manager', 'Quản lý website'),
+            ('pharmacist', 'Dược sĩ'),
+            ('patient', 'Bệnh nhân'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        initial='patient',
+        required=False
+    )
+    
     password1 = forms.CharField(
         label="Mật khẩu",
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Nhập mật khẩu'}),
@@ -47,12 +60,13 @@ class UserRegistrationForm(UserCreationForm):
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password1', 'password2']
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'user_type', 'password1', 'password2']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs['class'] = 'form-control'
+            if field.widget.__class__.__name__ != 'Select':
+                field.widget.attrs['class'] = 'form-control'
 
 class UserProfileUpdateForm(forms.ModelForm):
     class Meta:

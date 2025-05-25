@@ -79,3 +79,84 @@ class DrugRecommendationTests(TestCase):
         
         # Verify the drug recommendation was correctly saved in the notes
         self.assertIn('NSAIDs, Corticosteroids', diagnosis.notes)
+
+class NewDiseaseTests(TestCase):
+    def setUp(self):
+        # Create a test user
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpassword'
+        )
+        
+        # Create test symptoms
+        self.symptom1 = Symptom.objects.create(name='Mờ mắt', description='Nhìn không rõ, hình ảnh bị mờ')
+        self.symptom2 = Symptom.objects.create(name='Đau mắt', description='Cảm giác đau ở vùng mắt')
+        self.symptom3 = Symptom.objects.create(name='Nhạy cảm với ánh sáng', description='Khó chịu với ánh sáng')
+        
+        # Create test disease
+        self.disease = Disease.objects.create(
+            name='Bệnh Glaucoma',
+            description='Bệnh tăng nhãn áp, tổn thương thần kinh thị giác',
+            severity='high',
+            treatment_guidelines='Dùng thuốc nhỏ mắt giảm nhãn áp, phẫu thuật laser hoặc phẫu thuật lỗ thoát nước.'
+        )
+        
+        # Add symptoms to disease
+        self.disease.symptoms.add(self.symptom1, self.symptom2, self.symptom3)
+        
+        # Create a client for making requests
+        self.client = Client()
+        self.client.login(username='testuser', password='testpassword')
+        
+    def test_recommend_drug_page_loads(self):
+        """Test that the recommend drug page loads correctly"""
+        response = self.client.get(reverse('diagnosis:recommend_drug'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'diagnosis/recommend_drug.html')
+        
+    def test_recommend_drug_form_submission(self):
+        """Test submitting the drug recommendation form"""
+        post_data = {
+            'age': 45,
+            'gender': 'male',
+            'severity': 'HIGH',
+            'symptoms': [self.symptom1.id, self.symptom2.id, self.symptom3.id]
+        }
+        
+        response = self.client.post(reverse('diagnosis:recommend_drug'), post_data)
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that symptoms were processed correctly
+        self.assertIn('selected_symptoms', response.context)
+        selected_symptoms = response.context['selected_symptoms']
+        self.assertEqual(len(selected_symptoms), 3)
+        self.assertIn(self.symptom1, selected_symptoms)
+        self.assertIn(self.symptom2, selected_symptoms)
+        self.assertIn(self.symptom3, selected_symptoms)
+        
+    def test_diagnosis_with_new_disease(self):
+        """Test diagnosing with new disease symptoms"""
+        # Login the user
+        self.client.login(username='testuser', password='testpassword')
+        
+        # Set up the symptom combination for the new disease
+        post_data = {
+            'symptoms': [self.symptom1.id, self.symptom2.id, self.symptom3.id],
+            'age': 50,
+            'gender': 'female'
+        }
+        
+        # Request a diagnosis
+        response = self.client.post(reverse('diagnosis:diagnose'), post_data)
+        
+        # Verify the diagnosis response
+        self.assertEqual(response.status_code, 200)
+        
+        # Check if the disease is in the predicted diseases
+        if 'predicted_diseases' in response.context:
+            predicted_diseases = response.context['predicted_diseases']
+            disease_names = [d.name for d in predicted_diseases]
+            self.assertIn('Bệnh Glaucoma', disease_names, 
+                         "Bệnh Glaucoma should be in the predicted diseases")

@@ -11,7 +11,6 @@ class User(AbstractUser):
     USER_TYPE_CHOICES = [
         ('admin', 'Quản trị viên'),
         ('web_manager', 'Quản lý website'),
-        ('doctor', 'Bác sĩ'),
         ('pharmacist', 'Dược sĩ'),
         ('patient', 'Bệnh nhân'),
     ]
@@ -44,11 +43,6 @@ class User(AbstractUser):
     def is_web_manager(self):
         """Check if the user is a web manager"""
         return self.user_type == 'web_manager'
-        
-    @property
-    def is_doctor(self):
-        """Check if the user is a doctor"""
-        return self.user_type == 'doctor'
         
     @property
     def is_pharmacist(self):

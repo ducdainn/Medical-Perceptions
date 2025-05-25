@@ -233,15 +233,20 @@ def user_dashboard(request):
 @admin_required
 def user_management(request):
     """User management view for admins"""
-    # Get list of all users
-    user_list = User.objects.all().order_by('-date_joined')
+    # Get sorting parameter
+    sort_by = request.GET.get('sort', '-date_joined')  # Default: newest first
+    
+    # Get list of all users with sorting
+    if sort_by == 'date_joined':
+        user_list = User.objects.all().order_by('date_joined')  # Oldest first
+    else:
+        user_list = User.objects.all().order_by('-date_joined')  # Newest first
     
     # Get user statistics
     user_stats = {
         'total': user_list.count(),
         'admin': user_list.filter(user_type='admin').count(),
         'web_manager': user_list.filter(user_type='web_manager').count(),
-        'doctor': user_list.filter(user_type='doctor').count(),
         'pharmacist': user_list.filter(user_type='pharmacist').count(),
         'patient': user_list.filter(user_type='patient').count(),
     }
@@ -282,6 +287,7 @@ def user_management(request):
         'search_query': search_query,
         'role_filter': role_filter,
         'status_filter': status_filter,
+        'sort_by': sort_by,
     }
     
     return render(request, 'accounts/user_management.html', context)
@@ -292,11 +298,22 @@ def add_user(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, f'Người dùng {user.username} đã được tạo thành công.')
+            user = form.save(commit=False)
+            # Set user_type from form data
+            user_type = form.cleaned_data.get('user_type', 'patient')
+            user.user_type = user_type
+            user.save()
+            
+            # Get display name for user type
+            user_type_display = dict(form.fields['user_type'].choices).get(user_type, user_type)
+            messages.success(request, f'Người dùng {user.username} đã được tạo thành công với vai trò {user_type_display}.')
             return redirect('accounts:user_management')
         else:
-            messages.error(request, 'Có lỗi xảy ra khi tạo người dùng mới. Vui lòng kiểm tra lại thông tin.')
+            # Add detailed form errors to messages
+            for field, errors in form.errors.items():
+                field_label = form.fields.get(field, {}).label or field
+                for error in errors:
+                    messages.error(request, f'{field_label}: {error}')
     
     return redirect('accounts:user_management')
 

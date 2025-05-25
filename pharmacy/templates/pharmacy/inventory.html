@@ -21,49 +21,53 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
         border: 1px solid rgba(0,0,0,0.2) !important;
     }
-    /* Custom backdrop styling */
-    .modal.show::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040;
-        pointer-events: none;
+    
+    /* Search and filter styles */
+    .search-form {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     }
-    /* Ensure form inputs are visible and clickable */
-    .modal input, .modal select, .modal button {
-        z-index: 1061 !important;
-        position: relative !important;
-        background: #fff !important;
+    
+    /* Statistics cards */
+    .stat-card {
+        border-radius: 10px;
+        transition: all 0.3s;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        height: 100%;
     }
-    /* Make modal fully visible when shown */
-    .modal.show .modal-dialog {
-        opacity: 1 !important;
-        transform: none !important;
-        pointer-events: auto !important;
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
-    /* Style modal buttons */
-    .modal .btn-cancel {
-        background-color: #dc3545 !important;
-        border-color: #dc3545 !important;
-        color: white !important;
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
     }
-    .modal .btn-cancel:hover {
-        background-color: #bb2d3b !important;
-        border-color: #b02a37 !important;
+    
+    .bg-gradient-total {
+        background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
     }
-    .modal .btn-save {
-        background-color: #0d6efd !important;
-        border-color: #0d6efd !important;
-        color: white !important;
+    
+    .bg-gradient-in-stock {
+        background: linear-gradient(45deg, #28a745 0%, #20c997 100%);
     }
-    .modal .btn-save:hover {
-        background-color: #0b5ed7 !important;
-        border-color: #0a58ca !important;
+    
+    .bg-gradient-low-stock {
+        background: linear-gradient(45deg, #dc3545 0%, #fd7e14 100%);
     }
+    
     /* Avatar styles */
     .avatar-circle {
         width: 35px;
@@ -82,6 +86,7 @@
 </style>
 
 <div class="container mt-4">
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center">
             {% if request.user.avatar %}
@@ -93,30 +98,111 @@
             {% endif %}
             <h2 class="mb-0">Quản lý tồn kho</h2>
         </div>
+        {% if request.user.is_admin or request.user.is_web_manager %}
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
             <i class="fas fa-plus"></i> Thêm tồn kho
         </button>
+        {% endif %}
     </div>
 
+    <!-- Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card card text-center">
+                <div class="card-body p-3">
+                    <div class="stat-icon mx-auto mb-3 bg-gradient-total">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <h3 class="mb-0" id="total-count">{{ total_items }}</h3>
+                    <p class="text-muted mb-0">Tổng sản phẩm</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card text-center">
+                <div class="card-body p-3">
+                    <div class="stat-icon mx-auto mb-3 bg-gradient-in-stock">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3 class="mb-0" id="in-stock-count">{{ in_stock_items }}</h3>
+                    <p class="text-muted mb-0">Đủ hàng</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card text-center">
+                <div class="card-body p-3">
+                    <div class="stat-icon mx-auto mb-3 bg-gradient-low-stock">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="mb-0" id="low-stock-count">{{ low_stock_items }}</h3>
+                    <p class="text-muted mb-0">Sắp hết</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-form">
+        <form method="get" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                        <input type="text" name="search" class="form-control auto-submit" placeholder="Tìm theo tên thuốc, mô tả..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select auto-submit">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="in_stock" {% if status_filter == 'in_stock' %}selected{% endif %}>Đủ hàng</option>
+                        <option value="low_stock" {% if status_filter == 'low_stock' %}selected{% endif %}>Sắp hết</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="sort" class="form-select auto-submit">
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sắp xếp theo tên</option>
+                        <option value="quantity_asc" {% if sort_by == 'quantity_asc' %}selected{% endif %}>Số lượng: Thấp → Cao</option>
+                        <option value="quantity_desc" {% if sort_by == 'quantity_desc' %}selected{% endif %}>Số lượng: Cao → Thấp</option>
+                        <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Trạng thái (Sắp hết trước)</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Inventory Table -->
     <div class="card">
-        <div class="card-body">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Danh sách tồn kho</h5>
+            <span class="badge bg-primary rounded-pill" id="result-count">{{ inventory|length }} sản phẩm</span>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover inventory-table mb-0" id="inventoryTable">
                     <thead>
                         <tr>
-                            <th>Thuốc</th>
-                            <th>Số lượng</th>
-                            <th>Đơn vị</th>
-                            <th>Số lượng tối thiểu</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
+                            <th scope="col" width="40">#</th>
+                            <th scope="col">Thuốc</th>
+                            <th scope="col">Số lượng</th>
+                            <th scope="col">Đơn vị</th>
+                            <th scope="col">Số lượng tối thiểu</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col" class="text-end">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in inventory %}
-                        <tr>
+                        <tr class="inventory-row" 
+                            data-medicine-name="{{ item.medicine.name|lower }}"
+                            data-medicine-desc="{{ item.medicine.description|lower }}"
+                            data-unit="{{ item.unit|lower }}"
+                            data-quantity="{{ item.quantity }}"
+                            data-min-quantity="{{ item.min_quantity }}"
+                            data-status="{% if item.quantity <= item.min_quantity %}low_stock{% else %}in_stock{% endif %}">
+                            <td class="row-number">{{ forloop.counter }}</td>
                             <td>{{ item.medicine.name }}</td>
-                            <td>{{ item.quantity }}</td>
+                            <td class="quantity">{{ item.quantity }}</td>
                             <td>{{ item.unit }}</td>
                             <td>{{ item.min_quantity }}</td>
                             <td>
@@ -128,14 +214,19 @@
                             </td>
                             <td>
                                 <div class="btn-group">
+                                    {% if request.user.is_admin or request.user.is_web_manager %}
                                     <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editInventoryModal{{ item.id }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteInventoryModal{{ item.id }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
+                                    {% else %}
+                                    <span class="text-muted small">Chỉ xem</span>
+                                    {% endif %}
                                 </div>
 
+                                {% if request.user.is_admin or request.user.is_web_manager %}
                                 <!-- Modal sửa tồn kho -->
                                 <div class="modal fade" id="editInventoryModal{{ item.id }}" tabindex="-1">
                                     <div class="modal-dialog">
@@ -165,8 +256,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Hủy</button>
-                                                    <button type="submit" class="btn btn-save">Lưu</button>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                    <button type="submit" class="btn btn-primary">Lưu</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -194,11 +285,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">Chưa có tồn kho nào</td>
+                        <tr id="empty-row">
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                                <p class="mb-0">Chưa có tồn kho nào</p>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -207,7 +302,8 @@
         </div>
     </div>
 
-    <!-- Modal thêm tồn kho -->
+    {% if request.user.is_admin or request.user.is_web_manager %}
+    <!-- Modal thêm tồn kho (chỉ cho Admin/Web Manager) -->
     <div class="modal fade" id="addInventoryModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -241,12 +337,148 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-save">Thêm</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Thêm</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    const statusSelect = document.querySelector('select[name="status"]');
+    const sortSelect = document.querySelector('select[name="sort"]');
+    const inventoryRows = Array.from(document.querySelectorAll('.inventory-row'));
+    const emptyRow = document.getElementById('empty-row');
+    
+    let searchTimeout;
+    
+    // Search functionality with debounce
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                filterAndSort();
+            }, 500); // 500ms debounce
+        });
+    }
+    
+    // Immediate filtering for dropdowns
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            filterAndSort();
+        });
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            filterAndSort();
+        });
+    }
+    
+    function filterAndSort() {
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const statusFilter = statusSelect ? statusSelect.value : '';
+        const sortBy = sortSelect ? sortSelect.value : 'name';
+        
+        let visibleRows = [];
+        
+        // Filter rows
+        inventoryRows.forEach(row => {
+            let isVisible = true;
+            
+            // Search filter
+            if (searchTerm) {
+                const medicineName = row.dataset.medicineName || '';
+                const medicineDesc = row.dataset.medicineDesc || '';
+                const unit = row.dataset.unit || '';
+                
+                if (!medicineName.includes(searchTerm) && 
+                    !medicineDesc.includes(searchTerm) && 
+                    !unit.includes(searchTerm)) {
+                    isVisible = false;
+                }
+            }
+            
+            // Status filter
+            if (statusFilter && isVisible) {
+                const rowStatus = row.dataset.status;
+                if (rowStatus !== statusFilter) {
+                    isVisible = false;
+                }
+            }
+            
+            if (isVisible) {
+                visibleRows.push(row);
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Sort visible rows
+        visibleRows.sort((a, b) => {
+            if (sortBy === 'quantity_asc') {
+                return parseInt(a.dataset.quantity) - parseInt(b.dataset.quantity);
+            } else if (sortBy === 'quantity_desc') {
+                return parseInt(b.dataset.quantity) - parseInt(a.dataset.quantity);
+            } else if (sortBy === 'name') {
+                return a.dataset.medicineName.localeCompare(b.dataset.medicineName);
+            } else if (sortBy === 'status') {
+                // Low stock first, then by name
+                if (a.dataset.status === 'low_stock' && b.dataset.status !== 'low_stock') return -1;
+                if (a.dataset.status !== 'low_stock' && b.dataset.status === 'low_stock') return 1;
+                return a.dataset.medicineName.localeCompare(b.dataset.medicineName);
+            }
+            return 0;
+        });
+        
+        // Re-order DOM elements
+        const tbody = document.querySelector('#inventoryTable tbody');
+        visibleRows.forEach((row, index) => {
+            tbody.appendChild(row);
+            // Update row numbers
+            const numberCell = row.querySelector('.row-number');
+            if (numberCell) {
+                numberCell.textContent = index + 1;
+            }
+        });
+        
+        // Update statistics
+        updateStatistics(visibleRows);
+        
+        // Show/hide empty message
+        if (emptyRow) {
+            emptyRow.style.display = visibleRows.length === 0 ? '' : 'none';
+        }
+        
+        // Update result count
+        const resultCount = document.getElementById('result-count');
+        if (resultCount) {
+            resultCount.textContent = `${visibleRows.length} sản phẩm`;
+        }
+    }
+    
+    function updateStatistics(visibleRows) {
+        const totalCount = visibleRows.length;
+        const lowStockCount = visibleRows.filter(row => row.dataset.status === 'low_stock').length;
+        const inStockCount = totalCount - lowStockCount;
+        
+        const totalCountEl = document.getElementById('total-count');
+        const inStockCountEl = document.getElementById('in-stock-count');
+        const lowStockCountEl = document.getElementById('low-stock-count');
+        
+        if (totalCountEl) totalCountEl.textContent = totalCount;
+        if (inStockCountEl) inStockCountEl.textContent = inStockCount;
+        if (lowStockCountEl) lowStockCountEl.textContent = lowStockCount;
+    }
+    
+    // Initialize on page load
+    filterAndSort();
+});
+</script>
 {% endblock %} 

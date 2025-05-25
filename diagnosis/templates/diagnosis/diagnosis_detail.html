@@ -3,130 +3,223 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h4 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Chi tiết chẩn đoán #{{ diagnosis.id }}</h4>
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Thông tin chẩn đoán</h4>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-4">
+                    <div class="row">
                         <div class="col-md-6">
                             <h5>Thông tin bệnh nhân</h5>
                             <p><strong>Tên:</strong> {{ diagnosis.patient.get_full_name }}</p>
                             <p><strong>Email:</strong> {{ diagnosis.patient.email }}</p>
-                            <p><strong>Ngày chẩn đoán:</strong> {{ diagnosis.diagnosis_date|date:"d/m/Y H:i" }}</p>
+                            <p><strong>Ngày sinh:</strong> {{ diagnosis.patient.date_of_birth|date:"d/m/Y"|default:"Chưa cập nhật" }}</p>
+                            <p><strong>Số điện thoại:</strong> {{ diagnosis.patient.phone_number|default:"Chưa cập nhật" }}</p>
                         </div>
                         <div class="col-md-6">
-                            <h5>Thông tin bác sĩ</h5>
-                            {% if diagnosis.doctor %}
-                                <p><strong>Tên bác sĩ:</strong> {{ diagnosis.doctor.get_full_name }}</p>
-                                <p><strong>Email:</strong> {{ diagnosis.doctor.email }}</p>
-                            {% else %}
-                                <p class="text-muted">Chẩn đoán tự động bởi hệ thống</p>
-                            {% endif %}
+                            <h5>Kết quả chẩn đoán</h5>
+                            <p><strong>Bệnh:</strong> {{ diagnosis.disease.name }}</p>
+                            <p><strong>Độ tin cậy:</strong> 
+                                <span class="badge bg-{% if diagnosis.confidence_score >= 0.8 %}success{% elif diagnosis.confidence_score >= 0.6 %}warning{% else %}danger{% endif %}">
+                                    {{ diagnosis.confidence_score|floatformat:1 }}%
+                                </span>
+                            </p>
+                            <p><strong>Ngày chẩn đoán:</strong> {{ diagnosis.diagnosis_date|date:"d/m/Y H:i" }}</p>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">Bệnh được chẩn đoán</h5>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Bệnh được chẩn đoán</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>{{ diagnosis.disease.name }}</h5>
+                            <p><strong>Mức độ nghiêm trọng:</strong> 
+                                {% if diagnosis.disease.severity == 'low' %}
+                                    <span class="badge bg-success">Nhẹ</span>
+                                {% elif diagnosis.disease.severity == 'medium' %}
+                                    <span class="badge bg-warning text-dark">Trung bình</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Nặng</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Độ tin cậy:</strong> {{ diagnosis.confidence_score|floatformat:1 }}%</p>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5>{{ diagnosis.disease.name }}</h5>
-                                    <p><strong>Mức độ nghiêm trọng:</strong> 
-                                        {% if diagnosis.disease.severity == 'low' %}
-                                            <span class="badge bg-success">Nhẹ</span>
-                                        {% elif diagnosis.disease.severity == 'medium' %}
-                                            <span class="badge bg-warning text-dark">Trung bình</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Nặng</span>
-                                        {% endif %}
-                                    </p>
-                                    <p><strong>Độ tin cậy:</strong> {{ diagnosis.confidence_score|floatformat:1 }}%</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5>Mô tả</h5>
-                                    <p>{{ diagnosis.disease.description|default:"Không có mô tả" }}</p>
-                                </div>
+                        <div class="col-md-6">
+                            <h5>Mô tả</h5>
+                            <p>{{ diagnosis.disease.description|default:"Không có mô tả" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Triệu chứng</h5>
+                </div>
+                <div class="card-body">
+                    {% if diagnosis.symptoms.all %}
+                        <div class="row">
+                            <div class="col-12">
+                                <ul class="list-group">
+                                    {% for symptom in diagnosis.symptoms.all %}
+                                    <li class="list-group-item d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        {{ symptom.name }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
                             </div>
                         </div>
-                    </div>
+                    {% else %}
+                        <p class="text-muted">Không có triệu chứng nào được ghi nhận.</p>
+                    {% endif %}
+                </div>
+            </div>
 
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0">Triệu chứng</h5>
+            {% if diagnosis.disease.treatment_guidelines or "Thuốc được khuyến nghị:" in diagnosis.notes %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Khuyến nghị thuốc</h5>
+                </div>
+                <div class="card-body">
+                    {% if "Thuốc được khuyến nghị:" in diagnosis.notes %}
+                        {% with drug_rec=diagnosis.notes|stringformat:'s'|slice:'43:' %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-pills fa-2x me-3"></i>
+                            <span class="fs-5 fw-bold">{{ drug_rec }}</span>
                         </div>
-                        <div class="card-body">
-                            {% if diagnosis.symptoms.all %}
-                                <div class="row">
-                                    <div class="col-12">
-                                        <ul class="list-group">
-                                            {% for symptom in diagnosis.symptoms.all %}
-                                            <li class="list-group-item d-flex align-items-center">
-                                                <i class="fas fa-check-circle text-success me-2"></i>
-                                                {{ symptom.name }}
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <p class="text-muted">Không có triệu chứng nào được ghi nhận.</p>
-                            {% endif %}
+                        {% endwith %}
+                    {% elif diagnosis.disease.treatment_guidelines %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-pills fa-2x me-3"></i>
+                            <span class="fs-5 fw-bold">{{ diagnosis.disease.treatment_guidelines }}</span>
                         </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-warning mt-3">
+                        <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i> Lưu ý quan trọng:</h6>
+                        <p class="mb-0">Khuyến nghị thuốc này dựa trên mô hình dự đoán và không thay thế cho tư vấn y tế chuyên nghiệp. Vui lòng tham khảo ý kiến của dược sĩ hoặc chuyên gia y tế trước khi sử dụng bất kỳ loại thuốc nào.</p>
                     </div>
+                </div>
+            </div>
+            {% endif %}
 
-                    {% if diagnosis.disease.treatment_guidelines or "Thuốc được khuyến nghị:" in diagnosis.notes %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0">Khuyến nghị thuốc</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if "Thuốc được khuyến nghị:" in diagnosis.notes %}
-                                {% with drug_rec=diagnosis.notes|stringformat:'s'|slice:'43:' %}
-                                <div class="alert alert-info">
-                                    <i class="fas fa-pills fa-2x me-3"></i>
-                                    <span class="fs-5 fw-bold">{{ drug_rec }}</span>
-                                </div>
-                                {% endwith %}
-                            {% elif diagnosis.disease.treatment_guidelines %}
-                                <div class="alert alert-info">
-                                    <i class="fas fa-pills fa-2x me-3"></i>
-                                    <span class="fs-5 fw-bold">{{ diagnosis.disease.treatment_guidelines }}</span>
-                                </div>
-                            {% endif %}
-                            
-                            <div class="alert alert-warning mt-3">
-                                <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i> Lưu ý quan trọng:</h6>
-                                <p class="mb-0">Khuyến nghị thuốc này dựa trên mô hình dự đoán và không thay thế cho tư vấn y tế chuyên nghiệp. Vui lòng tham khảo ý kiến của bác sĩ hoặc dược sĩ trước khi sử dụng bất kỳ loại thuốc nào.</p>
+            {% if diagnosis.notes and "Thuốc được khuyến nghị:" not in diagnosis.notes %}
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Ghi chú</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ diagnosis.notes|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="text-center">
+                <a href="{% url 'diagnosis:list' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i> Quay lại danh sách
+                </a>
+                
+                {% if request.user.is_staff %}
+                <a href="#" class="btn btn-warning ms-2">
+                    <i class="fas fa-edit me-2"></i> Chỉnh sửa
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Sidebar với thông tin bổ sung -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin bổ sung</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-calendar-alt me-2"></i>Thời gian</h6>
+                        <p class="text-muted mb-1">Ngày tạo: {{ diagnosis.created_at|date:"d/m/Y H:i" }}</p>
+                        <p class="text-muted mb-0">Cập nhật: {{ diagnosis.updated_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-chart-line me-2"></i>Độ tin cậy</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-{% if diagnosis.confidence_score >= 80 %}success{% elif diagnosis.confidence_score >= 60 %}warning{% else %}danger{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ diagnosis.confidence_score }}%" 
+                                 aria-valuenow="{{ diagnosis.confidence_score }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ diagnosis.confidence_score|floatformat:1 }}%
                             </div>
                         </div>
+                        <small class="text-muted">
+                            {% if diagnosis.confidence_score >= 80 %}
+                                Độ tin cậy cao
+                            {% elif diagnosis.confidence_score >= 60 %}
+                                Độ tin cậy trung bình
+                            {% else %}
+                                Độ tin cậy thấp
+                            {% endif %}
+                        </small>
                     </div>
-                    {% endif %}
-
-                    {% if diagnosis.notes and "Thuốc được khuyến nghị:" not in diagnosis.notes %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0">Ghi chú</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ diagnosis.notes|linebreaks }}</p>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-virus me-2"></i>Thông tin bệnh</h6>
+                        <p class="text-muted mb-1">Tên bệnh: {{ diagnosis.disease.name }}</p>
+                        <p class="text-muted mb-1">Mức độ: 
+                            {% if diagnosis.disease.severity == 'low' %}
+                                <span class="badge bg-success">Nhẹ</span>
+                            {% elif diagnosis.disease.severity == 'medium' %}
+                                <span class="badge bg-warning text-dark">Trung bình</span>
+                            {% else %}
+                                <span class="badge bg-danger">Nặng</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-muted mb-0">Số triệu chứng: {{ diagnosis.symptoms.count }}</p>
                     </div>
-                    {% endif %}
-
-                    <div class="text-center">
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Lưu ý</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-0">
+                        <small>
+                            <strong>Quan trọng:</strong> Kết quả chẩn đoán này được tạo bởi hệ thống AI và chỉ mang tính chất tham khảo. 
+                            Vui lòng liên hệ với dược sĩ hoặc chuyên gia y tế để được tư vấn chính xác.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Thao tác</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
                         <a href="{% url 'diagnosis:list' %}" class="btn btn-primary">
                             <i class="fas fa-arrow-left me-2"></i> Quay lại danh sách
                         </a>
                         
-                        {% if diagnosis.doctor == request.user or request.user.is_staff %}
-                        <a href="#" class="btn btn-warning ms-2">
+                        {% if request.user.is_staff %}
+                        <a href="#" class="btn btn-warning">
                             <i class="fas fa-edit me-2"></i> Chỉnh sửa
                         </a>
                         {% endif %}
+                        
+                        <a href="{% url 'diagnosis:recommend_drug' %}" class="btn btn-info">
+                            <i class="fas fa-pills me-2"></i> Khuyến nghị thuốc mới
+                        </a>
                     </div>
                 </div>
             </div>

@@ -51,8 +51,8 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'diagnosis.apps.DiagnosisConfig',
     'pharmacy.apps.PharmacyConfig',
-    'finance.apps.FinanceConfig',
-    'pos.apps.PosConfig',
+    # 'finance.apps.FinanceConfig',  # Disabled financial functionality
+    # 'pos.apps.PosConfig',  # Disabled POS functionality
     'chatbot.apps.ChatbotConfig',
 ]
 

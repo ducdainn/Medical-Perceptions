@@ -1453,6 +1453,160 @@
             background: rgba(255, 255, 255, 0.5);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Chat Popup Styling */
+        .chat-popup {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .chat-popup-header {
+            background: linear-gradient(135deg, #2E7D32 10%, #4CAF50 40%, #8BC34A 90%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 0 0;
+            flex-shrink: 0;
+        }
+        
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .btn-close-chat {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-close-chat:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .chat-popup-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .welcome-message {
+            margin-bottom: 15px;
+        }
+        
+        .bot-message-popup {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 15px;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        .user-message-popup {
+            background: linear-gradient(135deg, #2E7D32 10%, #4CAF50 40%, #8BC34A 90%);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 15px;
+            border-bottom-right-radius: 5px;
+            margin-left: auto;
+            margin-right: 0;
+            max-width: 80%;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .chat-popup-footer {
+            padding: 15px;
+            border-top: 1px solid #e9ecef;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            flex-shrink: 0;
+        }
+        
+        .chat-input {
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        .chat-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+        }
+        
+        .quick-actions-popup {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .quick-btn {
+            background: #e9ecef;
+            border: none;
+            border-radius: 15px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-btn:hover {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        /* Responsive design for mobile */
+        @media (max-width: 768px) {
+            .chat-popup {
+                width: 90%;
+                height: 70%;
+                right: 5%;
+                bottom: 90px;
+            }
+            
+            .floating-chatbot {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
     <!-- Global overrides to ensure all cards are white -->
@@ -1538,7 +1692,7 @@
                                         <i class="fas fa-list"></i> Danh sách chẩn đoán
                                     </a>
                                 </li>
-                                {% if user.is_staff or user.is_doctor %}
+                                {% if user.is_staff %}
                                 <li>
                                     <a class="dropdown-item" href="{% url 'diagnosis:create' %}">
                                         <i class="fas fa-plus"></i> Tạo chẩn đoán mới
@@ -1642,7 +1796,7 @@
                                         <i class="fas fa-archive"></i> Tin nhắn đã đóng
                                     </a>
                                 </li>
-                                {% elif user.is_doctor %}
+                                {% elif False %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'chatbot:admin_chat_list' %}">
@@ -1654,6 +1808,7 @@
                         </li>
                         
                         <!-- POS and Finance for staff only -->
+                        {% comment %}
                         {% if user.is_staff or user.is_pharmacist %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'pos:sale_list' %}">
@@ -1686,6 +1841,7 @@
                             </ul>
                         </li>
                         {% endif %}
+                        {% endcomment %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
@@ -1703,7 +1859,7 @@
                                     <span class="badge bg-danger ms-2">Admin</span>
                                 {% elif user.is_web_manager %}
                                     <span class="badge bg-success ms-2">Web Manager</span>
-                                {% elif user.is_doctor %}
+                                {% elif False %}
                                     <span class="badge bg-info ms-2">Bác sĩ</span>
                                 {% elif user.is_pharmacist %}
                                     <span class="badge bg-warning ms-2">Dược sĩ</span>
@@ -1869,9 +2025,55 @@
     {% if user.is_authenticated %}
     <div class="floating-chatbot">
         <span class="chat-tooltip">Chat với Bot trí tuệ nhân tạo</span>
-        <a href="{% url 'chatbot:bot_chat' %}" class="chat-btn">
+        <button class="chat-btn" onclick="toggleChatPopup()">
             <i class="fas fa-robot"></i>
-        </a>
+        </button>
+    </div>
+
+    <!-- Chat Popup -->
+    <div id="chatPopup" class="chat-popup" style="display: none;">
+        <div class="chat-popup-header">
+            <div class="d-flex align-items-center">
+                <div class="chat-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="ms-2">
+                    <h6 class="mb-0">ReViCARE Bot</h6>
+                    <small class="text-muted">Trợ lý y tế AI</small>
+                </div>
+                <button class="btn-close-chat ms-auto" onclick="toggleChatPopup()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-popup-body" id="chatPopupBody">
+            <div class="welcome-message">
+                <div class="bot-message-popup">
+                    <i class="fas fa-robot me-2"></i>
+                    Xin chào! Tôi là trợ lý y tế AI của ReViCARE. Tôi có thể giúp bạn:
+                    <ul class="mt-2 mb-0">
+                        <li>Tư vấn sức khỏe cơ bản</li>
+                        <li>Giải thích về thuốc và liệu pháp</li>
+                        <li>Hướng dẫn chăm sóc sức khỏe</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-popup-footer">
+            <div class="d-flex">
+                <input type="text" class="form-control chat-input" id="chatPopupInput" placeholder="Nhập tin nhắn..." onkeypress="handleEnterKey(event)">
+                <button class="btn btn-primary ms-2" onclick="sendPopupMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="quick-actions-popup mt-2">
+                <button class="quick-btn" onclick="insertQuickMessage('Tôi cần tư vấn về triệu chứng bệnh')">Tư vấn triệu chứng</button>
+                <button class="quick-btn" onclick="insertQuickMessage('Hướng dẫn sử dụng thuốc')">Hướng dẫn thuốc</button>
+                <button class="quick-btn" onclick="insertQuickMessage('Chăm sóc sức khỏe hàng ngày')">Chăm sóc sức khỏe</button>
+            </div>
+        </div>
     </div>
     {% endif %}
     
@@ -2397,6 +2599,98 @@
                     registrationModal.show();
                 });
             });
+        });
+    </script>
+    
+    <!-- Chat Popup JavaScript -->
+    <script>
+        let chatPopupVisible = false;
+        
+        // Toggle chat popup
+        function toggleChatPopup() {
+            const popup = document.getElementById('chatPopup');
+            chatPopupVisible = !chatPopupVisible;
+            
+            if (chatPopupVisible) {
+                popup.style.display = 'flex';
+                document.getElementById('chatPopupInput').focus();
+            } else {
+                popup.style.display = 'none';
+            }
+        }
+        
+        // Send message from popup
+        function sendPopupMessage() {
+            const input = document.getElementById('chatPopupInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Add user message to chat
+                addMessageToPopup(message, 'user');
+                input.value = '';
+                
+                // Show typing indicator and simulate bot response
+                setTimeout(() => {
+                    addBotResponse(message);
+                }, 1000);
+            }
+        }
+        
+        // Add message to popup chat
+        function addMessageToPopup(message, sender) {
+            const chatBody = document.getElementById('chatPopupBody');
+            const messageDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                messageDiv.className = 'user-message-popup';
+                messageDiv.textContent = message;
+            } else {
+                messageDiv.className = 'bot-message-popup';
+                messageDiv.innerHTML = '<i class="fas fa-robot me-2"></i>' + message;
+            }
+            
+            chatBody.appendChild(messageDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+        
+        // Simulate bot response
+        function addBotResponse(userMessage) {
+            let response = '';
+            const lowerMessage = userMessage.toLowerCase();
+            
+            if (lowerMessage.includes('triệu chứng') || lowerMessage.includes('bệnh')) {
+                response = 'Tôi hiểu bạn quan tâm về triệu chứng. Tuy nhiên, tôi khuyên bạn nên tham khảo ý kiến bác sĩ để được chẩn đoán chính xác. Bạn có thể đặt lịch khám qua hệ thống của chúng tôi.';
+            } else if (lowerMessage.includes('thuốc') || lowerMessage.includes('dược')) {
+                response = 'Về thông tin thuốc, tôi có thể cung cấp thông tin cơ bản. Tuy nhiên, việc sử dụng thuốc cần được chỉ định bởi bác sĩ hoặc dược sĩ. Bạn có câu hỏi cụ thể nào về thuốc không?';
+            } else if (lowerMessage.includes('chăm sóc') || lowerMessage.includes('sức khỏe')) {
+                response = 'Chăm sóc sức khỏe hàng ngày rất quan trọng! Một số lời khuyên cơ bản: ăn uống cân bằng, tập thể dục đều đặn, ngủ đủ giấc, và kiểm tra sức khỏe định kỳ. Bạn muốn biết thêm về lĩnh vực nào?';
+            } else {
+                response = 'Cảm ơn bạn đã liên hệ! Tôi có thể giúp bạn về các vấn đề sức khỏe cơ bản, thông tin thuốc, và hướng dẫn chăm sóc sức khỏe. Bạn có thể đặt câu hỏi cụ thể hơn không?';
+            }
+            
+            addMessageToPopup(response, 'bot');
+        }
+        
+        // Insert quick message
+        function insertQuickMessage(message) {
+            document.getElementById('chatPopupInput').value = message;
+        }
+        
+        // Handle Enter key
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                sendPopupMessage();
+            }
+        }
+        
+        // Close popup when clicking outside
+        document.addEventListener('click', function(event) {
+            const popup = document.getElementById('chatPopup');
+            const chatBtn = document.querySelector('.floating-chatbot');
+            
+            if (chatPopupVisible && popup && chatBtn && !popup.contains(event.target) && !chatBtn.contains(event.target)) {
+                toggleChatPopup();
+            }
         });
     </script>
 </body>

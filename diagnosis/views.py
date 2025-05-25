@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Symptom, Disease, Diagnosis
 from .forms import DiagnosisForm, SymptomForm, DiseaseForm
-from accounts.decorators import patient_view_only, doctor_required, admin_required, admin_or_web_manager_required
+from accounts.decorators import patient_view_only, admin_required, admin_or_web_manager_required
 import pickle
 import os
 import numpy as np
@@ -33,7 +33,7 @@ def diagnosis_detail(request, pk):
     }
     return render(request, 'diagnosis/diagnosis_detail.html', context)
 
-@doctor_required
+@admin_or_web_manager_required
 def diagnosis_create(request):
     if request.method == 'POST':
         form = DiagnosisForm(request.POST)

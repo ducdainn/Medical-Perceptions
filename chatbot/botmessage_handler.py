@@ -314,7 +314,7 @@ def process_medication_recommendation_query(message):
 @login_required
 def enhanced_bot_send_message(request):
     """
-    Enhanced API endpoint for sending messages to the chatbot with AI fallback mechanism
+    Enhanced API endpoint for sending messages to the chatbot
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -344,37 +344,46 @@ def enhanced_bot_send_message(request):
         # Add to memory context
         chat_memory.add_message('user', user_message)
         
-        # Check if this is a medication recommendation query
-        if check_if_medication_recommendation_query(user_message):
-            medication_response = process_medication_recommendation_query(user_message)
-            if medication_response:
-                # Save bot response
+        # Handle simple greetings and thanks
+        if is_greeting_or_thanks(user_message):
+            response = handle_greeting_or_thanks(user_message)
+            bot_msg = BotMessage.objects.create(
+                user=request.user,
+                type='bot',
+                content=response
+            )
+            chat_memory.add_message('bot', response)
+            return JsonResponse({
+                'message': response,
+                'type': 'bot',
+                'query_type': 'greeting'
+            })
+        
+        # Handle very short queries with expansion
+        if len(user_message.split()) <= 2:
+            expanded_response = handle_short_query(user_message)
+            if expanded_response:
                 bot_msg = BotMessage.objects.create(
                     user=request.user,
                     type='bot',
-                    content=medication_response
+                    content=expanded_response
                 )
-                # Add to memory
-                chat_memory.add_message('bot', medication_response)
+                chat_memory.add_message('bot', expanded_response)
                 return JsonResponse({
-                    'message': medication_response,
+                    'message': expanded_response,
                     'type': 'bot',
-                    'query_type': 'medication'
+                    'query_type': 'expanded'
                 })
         
-        # Check if this is an inventory query (but not a medication recommendation)
-        inventory_keywords = ['kho', 'tồn kho', 'inventory', 'còn hàng', 'hết hàng']
-        if (any(keyword in user_message.lower() for keyword in inventory_keywords) or
-            ('thuốc' in user_message.lower() and not check_if_medication_recommendation_query(user_message))):
+        # Check for inventory queries first
+        if any(keyword in user_message.lower() for keyword in ['thuốc', 'kho', 'tồn kho', 'inventory', 'còn hàng', 'hết hàng']):
             inventory_response = AdvancedChatbotDataAccess.process_inventory_query(user_message)
-            if inventory_response:
-                # Save bot response
+            if inventory_response and "Không tìm thấy thông tin" not in inventory_response:
                 bot_msg = BotMessage.objects.create(
                     user=request.user,
                     type='bot',
                     content=inventory_response
                 )
-                # Add to memory
                 chat_memory.add_message('bot', inventory_response)
                 return JsonResponse({
                     'message': inventory_response,
@@ -382,58 +391,77 @@ def enhanced_bot_send_message(request):
                     'query_type': 'inventory'
                 })
         
-        # Check if this is a prevention query (always use AI for these)
+        # Check for medication recommendation queries
+        if check_if_medication_recommendation_query(user_message):
+            medication_response = process_medication_recommendation_query(user_message)
+            if medication_response:
+                bot_msg = BotMessage.objects.create(
+                    user=request.user,
+                    type='bot',
+                    content=medication_response
+                )
+                chat_memory.add_message('bot', medication_response)
+                return JsonResponse({
+                    'message': medication_response,
+                    'type': 'bot',
+                    'query_type': 'medication'
+                })
+        
+        # Check for prevention queries
         if check_if_prevention_query(user_message):
-            # Skip database lookup and go straight to AI
-            pass
-        else:
-            # Check for symptom diagnosis query first (multiple symptoms)
-            symptom_list = extract_symptom_list(user_message)
-            if len(symptom_list) >= 2:
-                diagnosis_response = AdvancedChatbotDataAccess.process_advanced_diagnosis(symptom_list)
-                if diagnosis_response and "Không tìm thấy bệnh" not in diagnosis_response:
-                    # Save bot response
+            prevention_response = process_prevention_query(user_message)
+            if prevention_response:
+                bot_msg = BotMessage.objects.create(
+                    user=request.user,
+                    type='bot',
+                    content=prevention_response
+                )
+                chat_memory.add_message('bot', prevention_response)
+                return JsonResponse({
+                    'message': prevention_response,
+                    'type': 'bot',
+                    'query_type': 'prevention'
+                })
+        
+        # Check for medical knowledge queries (symptoms, diseases)
+        if check_if_medical_query(user_message):
+            search_term = extract_search_term(user_message)
+            if search_term:
+                database_response = process_medical_query(user_message)
+                if database_response and "Không tìm thấy thông tin liên quan" not in database_response:
                     bot_msg = BotMessage.objects.create(
                         user=request.user,
                         type='bot',
-                        content=diagnosis_response
+                        content=database_response
                     )
-                    # Add to memory
-                    chat_memory.add_message('bot', diagnosis_response)
+                    chat_memory.add_message('bot', database_response)
                     return JsonResponse({
-                        'message': diagnosis_response,
+                        'message': database_response,
                         'type': 'bot',
-                        'query_type': 'diagnosis'
+                        'query_type': 'medical'
                     })
-            
-            # Check for medical knowledge queries (symptoms, diseases)
-            if check_if_medical_query(user_message):
-                # Extract search terms
-                search_term = extract_search_term(user_message)
-                if search_term:
-                    database_response = process_medical_query(user_message)
-                    if database_response and "Không tìm thấy thông tin liên quan" not in database_response:
-                        # Save bot response
-                        bot_msg = BotMessage.objects.create(
-                            user=request.user,
-                            type='bot',
-                            content=database_response
-                        )
-                        # Add to memory
-                        chat_memory.add_message('bot', database_response)
-                        return JsonResponse({
-                            'message': database_response,
-                            'type': 'bot',
-                            'query_type': 'medical'
-                        })
         
-        # If we've got here, we couldn't handle the query with database knowledge
-        # Try using Gemini API for general knowledge response
+        # Check for symptom diagnosis query
+        symptom_list = extract_symptom_list(user_message)
+        if len(symptom_list) >= 2:
+            diagnosis_response = AdvancedChatbotDataAccess.process_advanced_diagnosis(symptom_list)
+            if diagnosis_response and "Không tìm thấy bệnh" not in diagnosis_response:
+                bot_msg = BotMessage.objects.create(
+                    user=request.user,
+                    type='bot',
+                    content=diagnosis_response
+                )
+                chat_memory.add_message('bot', diagnosis_response)
+                return JsonResponse({
+                    'message': diagnosis_response,
+                    'type': 'bot',
+                    'query_type': 'diagnosis'
+                })
+        
+        # If we've got here, try using Gemini API for general knowledge response
         if GEMINI_API_KEY:
-            # Get conversation context for AI prompt
             conversation_context = chat_memory.get_context_for_prompt()
             
-            # Prepare context for the AI
             system_info = """
             Bạn là trợ lý chăm sóc sức khỏe tự động của ReViCARE - một hệ thống quản lý phòng khám.
             Hãy trả lời câu hỏi y tế dựa trên kiến thức chuyên môn của bạn.
@@ -442,13 +470,13 @@ def enhanced_bot_send_message(request):
             tham khảo ý kiến bác sĩ hoặc chuyên gia y tế.
             
             Chú ý: KHÔNG sử dụng ký tự * trong câu trả lời của bạn. Thay vì dùng dấu * để đánh dấu điểm, hãy dùng dấu • hoặc -.
+            
+            Nếu câu hỏi không liên quan đến y tế hoặc sức khỏe, hãy lịch sự từ chối và giải thích rằng bạn chỉ hỗ trợ các vấn đề y tế.
             """
             
-            # Prepare prompt for Gemini AI
             prompt = f"{system_info}\n\n{conversation_context}\n\nCâu hỏi: {user_message}"
             
             try:
-                # Call the Gemini API
                 response = requests.post(
                     f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
                     json={
@@ -457,7 +485,8 @@ def enhanced_bot_send_message(request):
                             "temperature": 0.7,
                             "maxOutputTokens": 1024,
                         }
-                    }
+                    },
+                    timeout=10
                 )
                 
                 if response.status_code == 200:
@@ -465,60 +494,207 @@ def enhanced_bot_send_message(request):
                     ai_response = response_data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
                     
                     if ai_response:
-                        # Clean any markdown formatting
                         ai_response = clean_markdown(ai_response)
                         
-                        # Save bot response
                         bot_msg = BotMessage.objects.create(
                             user=request.user,
                             type='bot',
                             content=ai_response
                         )
-                        
-                        # Add to memory context
                         chat_memory.add_message('bot', ai_response)
-                        
-                        # Determine the query type based on the message content
-                        query_type = 'ai'
-                        
-                        # If this is a prevention query, always use 'ai' type
-                        if check_if_prevention_query(user_message):
-                            query_type = 'ai'
-                        # If the message is about symptoms diagnosis but we're using AI
-                        elif len(symptom_list) >= 2:
-                            query_type = 'diagnosis'
-                        # If the message is about medical knowledge but we're using AI
-                        elif check_if_medical_query(user_message):
-                            query_type = 'medical'
                         
                         return JsonResponse({
                             'message': ai_response,
                             'type': 'bot',
-                            'query_type': query_type
+                            'query_type': 'ai'
                         })
                 else:
                     print(f"Gemini API error: {response.status_code}, {response.text}")
             except Exception as e:
                 print(f"Error calling Gemini API: {str(e)}")
         
-        # If all else fails or API error occurred, return a generic response
-        generic_response = "Tôi không tìm thấy thông tin liên quan đến yêu cầu của bạn. Vui lòng hỏi rõ hơn hoặc liên hệ với nhân viên y tế để được hỗ trợ trực tiếp."
+        # Enhanced fallback response based on query type
+        fallback_response = get_intelligent_fallback_response(user_message)
         
-        # Save bot response
         bot_msg = BotMessage.objects.create(
             user=request.user,
             type='bot',
-            content=generic_response
+            content=fallback_response
         )
-        
-        # Add to memory context
-        chat_memory.add_message('bot', generic_response)
+        chat_memory.add_message('bot', fallback_response)
         
         return JsonResponse({
-            'message': generic_response,
+            'message': fallback_response,
             'type': 'bot',
-            'query_type': 'generic'
+            'query_type': 'fallback'
         })
             
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500) 
+        return JsonResponse({'error': str(e)}, status=500)
+
+def process_prevention_query(message):
+    """Process prevention-related queries"""
+    # Common prevention topics
+    prevention_responses = {
+        'cúm': """Để phòng ngừa cúm, bạn có thể:
+• Tiêm vắc-xin cúm hàng năm
+• Rửa tay thường xuyên với xà phòng
+• Tránh tiếp xúc gần với người bệnh
+• Che miệng khi ho, hắt hơi
+• Tăng cường sức đề kháng bằng ăn uống đầy đủ
+• Giữ vệ sinh môi trường sống và làm việc""",
+        
+        'covid': """Để phòng ngừa COVID-19:
+• Đeo khẩu trang nơi đông người
+• Rửa tay thường xuyên hoặc dùng nước rửa tay
+• Giữ khoảng cách an toàn với người khác
+• Tiêm vắc-xin COVID-19 đầy đủ
+• Tránh những nơi đông đúc, kín gió
+• Tăng cường sức khỏe bằng chế độ ăn uống lành mạnh""",
+        
+        'cảm lạnh': """Để phòng ngừa cảm lạnh:
+• Rửa tay thường xuyên
+• Tránh chạm tay vào mặt
+• Giữ ấm cơ thể khi thời tiết thay đổi
+• Ăn uống đầy đủ chất dinh dưỡng
+• Ngủ đủ giấc
+• Tập thể dục đều đặn để tăng sức đề kháng"""
+    }
+    
+    message_lower = message.lower()
+    for disease, response in prevention_responses.items():
+        if disease in message_lower:
+            return response
+    
+    # Generic prevention advice
+    return """Để phòng ngừa bệnh tật nói chung:
+• Rửa tay thường xuyên
+• Ăn uống lành mạnh, đa dạng
+• Tập thể dục đều đặn
+• Ngủ đủ giấc
+• Tiêm vắc-xin theo lịch
+• Khám sức khỏe định kỳ
+• Tránh stress, giữ tinh thần thoải mái"""
+
+def is_greeting_or_thanks(message):
+    """Check if message is a greeting or thanks"""
+    greetings = ['xin chào', 'chào', 'hello', 'hi', 'cảm ơn', 'thanks', 'thank you', 'tạm biệt', 'bye']
+    return any(greeting in message.lower() for greeting in greetings)
+
+def handle_greeting_or_thanks(message):
+    """Handle greeting and thanks messages"""
+    message_lower = message.lower()
+    
+    if any(word in message_lower for word in ['cảm ơn', 'thanks', 'thank you']):
+        return "Rất vui được hỗ trợ bạn! Nếu có thêm câu hỏi nào về sức khỏe, đừng ngại hỏi nhé."
+    
+    if any(word in message_lower for word in ['tạm biệt', 'bye']):
+        return "Tạm biệt! Chúc bạn có một ngày tốt lành và luôn khỏe mạnh!"
+    
+    # Default greeting
+    return "Xin chào! Tôi là trợ lý chăm sóc sức khỏe tự động của ReViCARE. Tôi có thể giúp bạn tìm hiểu về các vấn đề y tế, thuốc men, và sức khỏe. Bạn có câu hỏi gì cho tôi không?"
+
+def handle_short_query(message):
+    """Handle very short queries by expanding them"""
+    message_lower = message.lower().strip()
+    
+    # Handle single word medical queries
+    short_responses = {
+        'đau đầu': """Đau đầu có thể có nhiều nguyên nhân:
+• Căng thẳng, stress
+• Thiếu ngủ
+• Khô cơ thể (thiếu nước)
+• Áp lực công việc
+• Viêm xoang
+• Migraine
+
+Bạn có thể cho biết thêm: đau đầu có kèm theo triệu chứng nào khác không? Đau bao lâu rồi?""",
+        
+        'đau bụng': """Đau bụng có thể do:
+• Khó tiêu
+• Đầy hơi
+• Ăn uống không phù hợp
+• Viêm dạ dày
+• Táo bón
+
+Bạn có thể mô tả thêm: đau ở vị trí nào? Đau như thế nào? Có kèm theo triệu chứng khác không?""",
+        
+        'sốt': """Sốt thường là dấu hiệu cơ thể đang chống lại nhiễm trùng:
+• Nhiệt độ trên 37.5°C
+• Có thể kèm mệt mỏi, ớn lạnh
+• Thường do virus hoặc vi khuẩn gây ra
+
+Bạn có thể cho biết: sốt bao nhiều độ? Sốt bao lâu rồi? Có triệu chứng nào khác không?""",
+        
+        'ho': """Ho có thể chia thành:
+• Ho khô: thường do kích ứng
+• Ho có đờm: thường do nhiễm trùng
+• Ho kéo dài: cần khám để tìm nguyên nhân
+
+Bạn có thể mô tả: ho khô hay có đờm? Ho bao lâu rồi? Có kèm sốt không?""",
+        
+        'thuốc': """Bạn muốn hỏi về thuốc gì cụ thể?
+• Tìm kiếm thông tin thuốc cụ thể
+• Kiểm tra tồn kho thuốc
+• Hỏi về tác dụng của thuốc
+• Hỏi về liều dùng
+
+Vui lòng nêu rõ tên thuốc hoặc câu hỏi cụ thể nhé!""",
+        
+        'bệnh': """Bạn muốn hỏi về bệnh gì?
+• Triệu chứng của một bệnh cụ thể
+• Cách điều trị
+• Cách phòng ngừa
+• Chẩn đoán từ triệu chứng
+
+Vui lòng nêu rõ tên bệnh hoặc triệu chứng bạn quan tâm!""",
+    }
+    
+    # Check for exact matches
+    if message_lower in short_responses:
+        return short_responses[message_lower]
+    
+    # Check for partial matches
+    for key, response in short_responses.items():
+        if key in message_lower:
+            return response
+    
+    # Handle very generic queries
+    if message_lower in ['không khỏe', 'bệnh', 'đau']:
+        return """Tôi hiểu bạn đang không cảm thấy khỏe. Để có thể hỗ trợ tốt hơn, bạn có thể mô tả cụ thể hơn:
+• Bạn có triệu chứng gì?
+• Triệu chứng xuất hiện bao lâu rồi?
+• Có điều gì khiến bạn cảm thấy tốt hơn hoặc tệ hơn không?
+
+Thông tin chi tiết sẽ giúp tôi tư vấn chính xác hơn."""
+    
+    return None
+
+def get_intelligent_fallback_response(message):
+    """Provide intelligent fallback response based on message content"""
+    message_lower = message.lower()
+    
+    # Check if it's health-related
+    health_keywords = ['đau', 'bệnh', 'triệu chứng', 'thuốc', 'điều trị', 'khỏe', 'sức khỏe']
+    is_health_related = any(keyword in message_lower for keyword in health_keywords)
+    
+    if is_health_related:
+        return """Tôi hiểu bạn đang hỏi về vấn đề sức khỏe. Tuy nhiên, tôi cần thêm thông tin chi tiết để có thể hỗ trợ tốt hơn.
+
+Bạn có thể:
+• Mô tả rõ hơn triệu chứng hoặc vấn đề
+• Nêu cụ thể tên thuốc hoặc bệnh bạn quan tâm
+• Liên hệ trực tiếp với bác sĩ hoặc dược sĩ để được tư vấn chính xác
+
+Lưu ý: Tôi chỉ cung cấp thông tin tham khảo, không thay thế cho ý kiến chuyên gia y tế."""
+    
+    # For non-health questions
+    return """Tôi là trợ lý chăm sóc sức khỏe của ReViCARE, chuyên hỗ trợ các vấn đề y tế và sức khỏe.
+
+Tôi có thể giúp bạn:
+• Tìm hiểu về triệu chứng bệnh
+• Thông tin về thuốc men
+• Tư vấn sức khỏe cơ bản
+• Kiểm tra tồn kho thuốc
+
+Nếu bạn có câu hỏi về chủ đề khác, vui lòng tìm kiếm trên các nguồn thông tin phù hợp khác.""" 

@@ -26,8 +26,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('diagnosis/', include('diagnosis.urls')),
     path('pharmacy/', include('pharmacy.urls')),
-    path('finance/', include('finance.urls')),
-    path('pos/', include('pos.urls')),
+    # path('finance/', include('finance.urls')),  # Disabled financial functionality
+    # path('pos/', include('pos.urls')),  # Disabled POS functionality
     path('chatbot/', include('chatbot.urls')),
     # WebSocket paths are handled by ASGI in asgi.py, not through HTTP URLs
 ]

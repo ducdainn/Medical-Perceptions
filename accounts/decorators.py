@@ -36,17 +36,6 @@ def admin_or_web_manager_required(view_func):
         raise PermissionDenied
     return _wrapped_view
     
-def doctor_required(view_func):
-    """
-    Decorator for views that checks if the user is a doctor
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_doctor:
-            return view_func(request, *args, **kwargs)
-        raise PermissionDenied
-    return _wrapped_view
-    
 def pharmacist_required(view_func):
     """
     Decorator for views that checks if the user is a pharmacist
@@ -71,8 +60,7 @@ def patient_view_only(view_func):
         
         # If it's a POST request, only allow staff members to proceed
         if request.user.is_authenticated and (request.user.is_admin or 
-                                             request.user.is_web_manager or 
-                                             request.user.is_doctor):
+                                             request.user.is_web_manager):
             return view_func(request, *args, **kwargs)
             
         raise PermissionDenied

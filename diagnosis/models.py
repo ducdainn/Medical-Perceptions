@@ -38,7 +38,6 @@ class Disease(models.Model):
 
 class Diagnosis(models.Model):
     patient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='diagnoses', verbose_name='Bệnh nhân')
-    doctor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='doctor_diagnoses', verbose_name='Bác sĩ')
     symptoms = models.ManyToManyField(Symptom, related_name='diagnoses', verbose_name='Triệu chứng')
     disease = models.ForeignKey(Disease, on_delete=models.CASCADE, related_name='diagnoses', verbose_name='Bệnh được chẩn đoán')
     notes = models.TextField('Ghi chú', blank=True)

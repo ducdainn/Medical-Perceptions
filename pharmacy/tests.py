@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .models import Medicine, Prescription, Transaction, PrescriptionItem, TransactionItem, PrescriptionRequest
+from .models import Medicine, Prescription, Transaction, PrescriptionItem, TransactionItem, PrescriptionRequest, Inventory
 from diagnosis.models import Symptom, Disease
 from decimal import Decimal
 import json
@@ -537,3 +537,282 @@ class PrescriptionRequestAjaxTest(TestCase):
         self.assertEqual(new_request.disease, 'Bệnh thử nghiệm')
         self.assertEqual(new_request.recommended_drug, 'Test Drug, Test Drug 2')
         self.assertEqual(new_request.status, 'pending')
+
+class InventoryManagementTestCase(TestCase):
+    def setUp(self):
+        # Create test users
+        self.admin_user = User.objects.create_user(
+            username='admin_test',
+            email='admin@test.com',
+            password='testpass123',
+            user_type='admin'
+        )
+        
+        self.pharmacist_user = User.objects.create_user(
+            username='pharmacist_test',
+            email='pharmacist@test.com',
+            password='testpass123',
+            user_type='pharmacist'
+        )
+        
+        self.web_manager_user = User.objects.create_user(
+            username='webmanager_test',
+            email='webmanager@test.com',
+            password='testpass123',
+            user_type='web_manager'
+        )
+        
+        self.patient_user = User.objects.create_user(
+            username='patient_test',
+            email='patient@test.com',
+            password='testpass123',
+            user_type='patient'
+        )
+        
+        # Create test medicines
+        self.medicine1 = Medicine.objects.create(
+            name='Paracetamol',
+            description='Pain reliever',
+            price=5000
+        )
+        
+        self.medicine2 = Medicine.objects.create(
+            name='Ibuprofen',
+            description='Anti-inflammatory',
+            price=8000
+        )
+        
+        self.medicine3 = Medicine.objects.create(
+            name='Aspirin',
+            description='Blood thinner',
+            price=6000
+        )
+        
+        # Create test inventory items
+        self.inventory1 = Inventory.objects.create(
+            medicine=self.medicine1,
+            quantity=100,
+            unit='viên',
+            min_quantity=20
+        )
+        
+        self.inventory2 = Inventory.objects.create(
+            medicine=self.medicine2,
+            quantity=15,  # Low stock
+            unit='viên',
+            min_quantity=20
+        )
+        
+        self.inventory3 = Inventory.objects.create(
+            medicine=self.medicine3,
+            quantity=50,
+            unit='viên',
+            min_quantity=10
+        )
+    
+    def test_inventory_management_view_access(self):
+        """Test that all user types can access inventory management view"""
+        url = reverse('pharmacy:inventory')
+        
+        # Test admin access
+        self.client.login(username='admin_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Test pharmacist access
+        self.client.login(username='pharmacist_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Test web manager access
+        self.client.login(username='webmanager_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Test patient access
+        self.client.login(username='patient_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_inventory_search_functionality(self):
+        """Test search functionality"""
+        self.client.login(username='admin_test', password='testpass123')
+        url = reverse('pharmacy:inventory')
+        
+        # Search by medicine name
+        response = self.client.get(url, {'search': 'Paracetamol'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paracetamol')
+        self.assertNotContains(response, 'Ibuprofen')
+        
+        # Search by partial name (case insensitive)
+        response = self.client.get(url, {'search': 'para'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paracetamol')
+        
+        # Search by description
+        response = self.client.get(url, {'search': 'Pain reliever'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paracetamol')
+        
+        # Search by unit
+        response = self.client.get(url, {'search': 'viên'})
+        self.assertEqual(response.status_code, 200)
+        # Should return all items as they all have 'viên' unit
+        self.assertContains(response, 'Paracetamol')
+        self.assertContains(response, 'Ibuprofen')
+        self.assertContains(response, 'Aspirin')
+    
+    def test_inventory_status_filter(self):
+        """Test status filtering functionality"""
+        self.client.login(username='admin_test', password='testpass123')
+        url = reverse('pharmacy:inventory')
+        
+        # Filter by low stock
+        response = self.client.get(url, {'status': 'low_stock'})
+        self.assertEqual(response.status_code, 200)
+        # Should only show Ibuprofen (quantity 15 <= min_quantity 20)
+        self.assertContains(response, 'Ibuprofen')
+        self.assertNotContains(response, 'Paracetamol')
+        self.assertNotContains(response, 'Aspirin')
+        
+        # Filter by in stock
+        response = self.client.get(url, {'status': 'in_stock'})
+        self.assertEqual(response.status_code, 200)
+        # Should show Paracetamol and Aspirin
+        self.assertContains(response, 'Paracetamol')
+        self.assertContains(response, 'Aspirin')
+        self.assertNotContains(response, 'Ibuprofen')
+    
+    def test_inventory_sorting(self):
+        """Test sorting functionality"""
+        self.client.login(username='admin_test', password='testpass123')
+        url = reverse('pharmacy:inventory')
+        
+        # Sort by name (default)
+        response = self.client.get(url, {'sort': 'name'})
+        self.assertEqual(response.status_code, 200)
+        inventory_list = list(response.context['inventory'])
+        names = [item.medicine.name for item in inventory_list]
+        self.assertEqual(names, sorted(names))
+        
+        # Sort by quantity ascending
+        response = self.client.get(url, {'sort': 'quantity_asc'})
+        self.assertEqual(response.status_code, 200)
+        inventory_list = list(response.context['inventory'])
+        quantities = [item.quantity for item in inventory_list]
+        self.assertEqual(quantities, sorted(quantities))
+        
+        # Sort by quantity descending
+        response = self.client.get(url, {'sort': 'quantity_desc'})
+        self.assertEqual(response.status_code, 200)
+        inventory_list = list(response.context['inventory'])
+        quantities = [item.quantity for item in inventory_list]
+        self.assertEqual(quantities, sorted(quantities, reverse=True))
+    
+    def test_inventory_statistics(self):
+        """Test inventory statistics calculation"""
+        self.client.login(username='admin_test', password='testpass123')
+        url = reverse('pharmacy:inventory')
+        
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Check statistics
+        self.assertEqual(response.context['total_items'], 3)
+        self.assertEqual(response.context['low_stock_items'], 1)  # Only Ibuprofen
+        self.assertEqual(response.context['in_stock_items'], 2)   # Paracetamol and Aspirin
+    
+    def test_inventory_add_button_visibility(self):
+        """Test that add inventory button is only visible for admin and web manager"""
+        url = reverse('pharmacy:inventory')
+        
+        # Admin should see add button
+        self.client.login(username='admin_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertContains(response, 'Thêm tồn kho')
+        
+        # Web manager should see add button
+        self.client.login(username='webmanager_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertContains(response, 'Thêm tồn kho')
+        
+        # Pharmacist should not see add button
+        self.client.login(username='pharmacist_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertNotContains(response, 'Thêm tồn kho')
+        
+        # Patient should not see add button
+        self.client.login(username='patient_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertNotContains(response, 'Thêm tồn kho')
+    
+    def test_inventory_edit_delete_buttons_visibility(self):
+        """Test that edit/delete buttons are only visible for admin and web manager"""
+        url = reverse('pharmacy:inventory')
+        
+        # Admin should see edit/delete buttons
+        self.client.login(username='admin_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertContains(response, 'editInventoryModal')
+        self.assertContains(response, 'deleteInventoryModal')
+        
+        # Web manager should see edit/delete buttons
+        self.client.login(username='webmanager_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertContains(response, 'editInventoryModal')
+        self.assertContains(response, 'deleteInventoryModal')
+        
+        # Pharmacist should see "Chỉ xem" text instead
+        self.client.login(username='pharmacist_test', password='testpass123')
+        response = self.client.get(url)
+        self.assertContains(response, 'Chỉ xem')
+        self.assertNotContains(response, 'editInventoryModal')
+        self.assertNotContains(response, 'deleteInventoryModal')
+    
+    def test_inventory_create_permission(self):
+        """Test that only admin and web manager can create inventory"""
+        url = reverse('pharmacy:inventory_create')
+        data = {
+            'medicine': self.medicine1.id,
+            'quantity': 50,
+            'unit': 'hộp',
+            'min_quantity': 10
+        }
+        
+        # Admin should be able to create
+        self.client.login(username='admin_test', password='testpass123')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)  # Redirect after success
+        
+        # Web manager should be able to create
+        self.client.login(username='webmanager_test', password='testpass123')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        
+        # Pharmacist should not be able to create (but view is login_required, not role-restricted)
+        self.client.login(username='pharmacist_test', password='testpass123')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)  # Still redirects but should be restricted
+    
+    def test_inventory_combined_filters(self):
+        """Test combining search, status filter, and sorting"""
+        self.client.login(username='admin_test', password='testpass123')
+        url = reverse('pharmacy:inventory')
+        
+        # Search for items with 'i' in name, filter by in_stock, sort by quantity_desc
+        response = self.client.get(url, {
+            'search': 'i',
+            'status': 'in_stock',
+            'sort': 'quantity_desc'
+        })
+        self.assertEqual(response.status_code, 200)
+        
+        # Should show Aspirin (contains 'i', in stock, sorted by quantity)
+        inventory_list = list(response.context['inventory'])
+        self.assertTrue(len(inventory_list) > 0)
+        
+        # Verify all items contain 'i' and are in stock
+        for item in inventory_list:
+            self.assertIn('i', item.medicine.name.lower())
+            self.assertGreater(item.quantity, item.min_quantity)

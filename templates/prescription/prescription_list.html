@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh sách đơn thuốc - ReViCARE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-prescription me-2"></i>Danh sách đơn thuốc</h2>
+        {% if user.is_staff %}
+        <a href="{% url 'prescription:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Tạo đơn thuốc mới
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <form method="get" class="d-flex">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Tìm kiếm..." value="{{ request.GET.search|default:'' }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-filter me-1"></i> Lọc
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'prescription:list' %}">Tất cả</a></li>
+                            <li><a class="dropdown-item" href="{% url 'prescription:list' %}?status=pending">Chờ cấp phát</a></li>
+                            <li><a class="dropdown-item" href="{% url 'prescription:list' %}?status=dispensed">Đã cấp phát</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {% if prescriptions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Bệnh nhân</th>
+                            <th>Bệnh</th>
+                            <th>Ngày kê</th>
+                            <th>Bác sĩ</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prescription in prescriptions %}
+                        <tr>
+                            <td>#{{ prescription.id }}</td>
+                            <td>{{ prescription.diagnosis.patient.get_full_name }}</td>
+                            <td>{{ prescription.diagnosis.disease.name }}</td>
+                            <td>{{ prescription.created_at|date:"d/m/Y" }}</td>
+
+                            <td>
+                                {% if prescription.is_dispensed %}
+                                <span class="badge bg-success">Đã cấp phát</span>
+                                {% else %}
+                                <span class="badge bg-warning">Chờ cấp phát</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'prescription:detail' prescription.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if user.is_staff and not prescription.is_dispensed %}
+                                    <a href="{% url 'prescription:update' prescription.pk %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'prescription:dispense' prescription.pk %}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-pills"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'prescription:print' prescription.pk %}" class="btn btn-sm btn-secondary" target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <div class="mt-4 d-flex justify-content-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info">
+                {% if request.GET.search %}
+                    Không tìm thấy đơn thuốc nào phù hợp với từ khóa "{{ request.GET.search }}".
+                    <a href="{% url 'prescription:list' %}" class="alert-link">Xem tất cả đơn thuốc</a>.
+                {% elif request.GET.status %}
+                    Không có đơn thuốc nào ở trạng thái này.
+                    <a href="{% url 'prescription:list' %}" class="alert-link">Xem tất cả đơn thuốc</a>.
+                {% else %}
+                    Chưa có đơn thuốc nào được tạo.
+                    {% if user.is_staff %}
+                    <a href="{% url 'prescription:create' %}" class="alert-link">Tạo đơn thuốc mới</a>.
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

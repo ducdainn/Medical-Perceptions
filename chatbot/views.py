@@ -310,19 +310,19 @@ def bot_chat_view(request):
     disease_count = 0
     drug_count = 0
     medicine_count = 0
-    clinic_count = 0
-    clinic_inventory_count = 0
+    inventory_count = 0
+    
     
     try:
         from diagnosis.models import Symptom, Disease
-        from pharmacy.models import Drug, Medicine, ClinicLocation, ClinicInventory
+        from pharmacy.models import Drug, Medicine, Inventory
         
         symptom_count = Symptom.objects.count()
         disease_count = Disease.objects.count()
         drug_count = Drug.objects.count()
         medicine_count = Medicine.objects.count()
-        clinic_count = ClinicLocation.objects.filter(is_active=True).count()
-        clinic_inventory_count = ClinicInventory.objects.count()
+        inventory_count = Inventory.objects.count()
+        
     except Exception as e:
         print(f"Error getting database counts: {str(e)}")
     
@@ -345,8 +345,8 @@ def bot_chat_view(request):
         'disease_count': disease_count,
         'drug_count': drug_count,
         'medicine_count': medicine_count,
-        'clinic_count': clinic_count,
-        'clinic_inventory_count': clinic_inventory_count,
+        'inventory_count': inventory_count,
+        
         'inventory_stats': inventory_stats,
     }
     

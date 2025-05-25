@@ -93,6 +93,23 @@ class Command(BaseCommand):
             {'name': 'Ngưng thở khi ngủ', 'description': 'Ngưng thở tạm thời trong khi ngủ, thường kèm theo ngáy to'},
             {'name': 'Hen suyễn', 'description': 'Khó thở, thở khò khè do co thắt phế quản'},
             {'name': 'Viêm phổi', 'description': 'Viêm nhiễm trong phổi, gây ho, sốt, khó thở'},
+            
+            # Thêm nhiều triệu chứng mới nữa
+            {'name': 'Khô họng', 'description': 'Cảm giác khô rát trong họng'},
+            {'name': 'Đau nhức xương khớp', 'description': 'Cảm giác đau nhức ở các khớp xương'},
+            {'name': 'Viêm khớp', 'description': 'Viêm các khớp, thường gây đau và sưng'},
+            {'name': 'Viêm lợi', 'description': 'Viêm nướu răng, thường đỏ và chảy máu'},
+            {'name': 'Viêm da tiếp xúc', 'description': 'Viêm da do tiếp xúc với chất gây kích ứng'},
+            {'name': 'Viêm xoang', 'description': 'Viêm các xoang cạnh mũi'},
+            {'name': 'Nghẹt mũi', 'description': 'Khó thở qua mũi do tắc nghẽn'},
+            {'name': 'Mụn trứng cá', 'description': 'Mụn nhỏ, đỏ hoặc có mủ trên da'},
+            {'name': 'Nhức nửa đầu', 'description': 'Đau dữ dội ở một bên đầu'},
+            {'name': 'Nhạy cảm với âm thanh', 'description': 'Khó chịu với tiếng ồn'},
+            {'name': 'Thiếu máu', 'description': 'Giảm số lượng hồng cầu hoặc hemoglobin'},
+            {'name': 'Rối loạn nhịp tim', 'description': 'Nhịp tim không đều'},
+            {'name': 'Viêm khớp dạng thấp', 'description': 'Viêm khớp do hệ miễn dịch tấn công các mô của cơ thể'},
+            {'name': 'Viêm đại tràng', 'description': 'Viêm niêm mạc đại tràng'},
+            {'name': 'Rối loạn tiêu hóa', 'description': 'Các vấn đề về tiêu hóa, như khó tiêu, đầy hơi'},
         ]
         
         self.stdout.write('Adding new symptoms...')
@@ -160,7 +177,7 @@ class Command(BaseCommand):
             {
                 'name': 'Viêm nướu',
                 'description': 'Viêm nướu răng, thường do vệ sinh răng miệng kém.',
-                'symptoms': ['Chảy máu nướu', 'Sưng nướu', 'Hôi miệng', 'Đau khi nhai', 'Nướu đỏ'],
+                'symptoms': ['Chảy máu nướu', 'Sưng nướu', 'Hôi miệng', 'Đau khi nhai', 'Nướu đỏ', 'Viêm lợi'],
                 'severity': 'medium',
                 'treatment_guidelines': 'Vệ sinh răng miệng kỹ, cạo vôi răng, súc miệng bằng nước muối hoặc dung dịch sát khuẩn.'
             },
@@ -230,14 +247,14 @@ class Command(BaseCommand):
             {
                 'name': 'Rối loạn lo âu',
                 'description': 'Rối loạn tâm lý với lo lắng quá mức, ảnh hưởng đến sinh hoạt hàng ngày.',
-                'symptoms': ['Lo âu', 'Hồi hộp', 'Đổ mồ hôi', 'Khó thở', 'Mất ngủ', 'Căng thẳng', 'Đau đầu'],
+                'symptoms': ['Lo âu', 'Hồi hộp', 'Đổ mồ hôi', 'Khó thở', 'Mất ngủ', 'Căng thẳng', 'Đau đầu', 'Rối loạn lo âu'],
                 'severity': 'medium',
                 'treatment_guidelines': 'Tâm lý trị liệu, liệu pháp nhận thức hành vi, thuốc chống lo âu nếu cần.'
             },
             {
                 'name': 'Rối loạn lưỡng cực',
                 'description': 'Rối loạn tâm trạng với các giai đoạn hưng cảm và trầm cảm luân phiên.',
-                'symptoms': ['Thay đổi tâm trạng', 'Mất ngủ', 'Tăng năng lượng quá mức', 'Trầm cảm', 'Hành vi bốc đồng', 'Suy nghĩ tự sát'],
+                'symptoms': ['Thay đổi tâm trạng', 'Mất ngủ', 'Tăng năng lượng quá mức', 'Trầm cảm', 'Hành vi bốc đồng', 'Suy nghĩ tự sát', 'Tự hại'],
                 'severity': 'high',
                 'treatment_guidelines': 'Thuốc ổn định tâm trạng, liệu pháp tâm lý, thuốc chống trầm cảm và chống loạn thần.'
             },
@@ -249,55 +266,60 @@ class Command(BaseCommand):
                 'treatment_guidelines': 'Thuốc Levodopa, thuốc chống Parkinson khác, vật lý trị liệu, đôi khi cần phẫu thuật kích thích não sâu.'
             },
             {
-                'name': 'Thiếu máu cục bộ cơ tim',
-                'description': 'Giảm cung cấp máu cho cơ tim do tắc nghẽn động mạch vành.',
-                'symptoms': ['Đau ngực', 'Đau lan ra cánh tay trái', 'Khó thở', 'Đổ mồ hôi lạnh', 'Hồi hộp', 'Mệt mỏi'],
-                'severity': 'high',
-                'treatment_guidelines': 'Thuốc chẹn beta, thuốc chống đông máu, nong và đặt stent mạch vành, phẫu thuật bắc cầu nối.'
-            },
-            {
-                'name': 'Suy tim',
-                'description': 'Tim không đủ khả năng bơm máu đáp ứng nhu cầu cơ thể.',
-                'symptoms': ['Khó thở', 'Mệt mỏi', 'Phù chân', 'Phù mặt', 'Đánh trống ngực khi nằm', 'Ho khan'],
-                'severity': 'high',
-                'treatment_guidelines': 'Thuốc ức chế men chuyển, chẹn beta, lợi tiểu, hạn chế natri, đôi khi cần thiết bị hỗ trợ tim hoặc ghép tim.'
-            },
-            {
-                'name': 'Trào ngược dạ dày thực quản',
-                'description': 'Acid dạ dày trào ngược lên thực quản gây viêm, khó chịu.',
-                'symptoms': ['Ợ nóng', 'Ợ chua', 'Khó nuốt', 'Đau ngực', 'Buồn nôn', 'Nói khàn', 'Ho mạn tính'],
+                'name': 'Viêm phế quản',
+                'description': 'Viêm niêm mạc phế quản, thường gây ho nhiều và khó thở.',
+                'symptoms': ['Ho kéo dài', 'Ho có đờm', 'Khò khè', 'Khó thở', 'Đau ngực', 'Mệt mỏi'],
                 'severity': 'medium',
-                'treatment_guidelines': 'Thuốc ức chế bơm proton, thuốc kháng H2, thay đổi lối sống, ăn ít và không ăn trước khi đi ngủ.'
+                'treatment_guidelines': 'Thuốc long đờm, giãn phế quản, kháng sinh nếu do vi khuẩn, hít thuốc corticosteroid nếu cần.'
             },
             {
-                'name': 'Hội chứng ruột kích thích',
-                'description': 'Rối loạn chức năng ruột với các triệu chứng đau bụng, thay đổi thói quen đại tiện.',
-                'symptoms': ['Đau bụng', 'Đầy hơi', 'Tiêu chảy', 'Táo bón', 'Chướng bụng', 'Cảm giác đi đại tiện không hết'],
+                'name': 'Viêm xoang',
+                'description': 'Viêm niêm mạc các xoang cạnh mũi, thường do vi khuẩn hoặc virus.',
+                'symptoms': ['Đau đầu', 'Nghẹt mũi', 'Chảy mũi', 'Giảm khứu giác', 'Đau mặt', 'Sốt nhẹ', 'Ho về đêm'],
                 'severity': 'medium',
-                'treatment_guidelines': 'Thay đổi chế độ ăn uống, thuốc chống co thắt, thuốc chống tiêu chảy hoặc nhuận tràng, quản lý stress.'
+                'treatment_guidelines': 'Rửa mũi bằng nước muối sinh lý, kháng sinh nếu do vi khuẩn, thuốc giảm viêm, giảm đau.'
             },
             {
-                'name': 'Hen suyễn',
-                'description': 'Bệnh phổi mãn tính với viêm và co thắt đường thở, gây khó thở.',
-                'symptoms': ['Khó thở', 'Thở khò khè', 'Ho', 'Tức ngực', 'Thở nhanh nông', 'Khó nói thành câu'],
+                'name': 'Viêm phổi',
+                'description': 'Viêm nhiễm tại phổi, có thể do vi khuẩn, virus hoặc nấm.',
+                'symptoms': ['Sốt cao', 'Ho có đờm màu vàng hoặc xanh', 'Khó thở', 'Đau ngực khi hít thở', 'Mệt mỏi', 'Đổ mồ hôi đêm'],
                 'severity': 'high',
-                'treatment_guidelines': 'Thuốc giãn phế quản, corticosteroid dạng hít, kiểm soát yếu tố kích phát, kế hoạch hành động hen suyễn.'
+                'treatment_guidelines': 'Kháng sinh phù hợp nếu do vi khuẩn, thuốc kháng virus nếu do virus, bổ sung oxy nếu cần, nghỉ ngơi và uống nhiều nước.'
             },
             {
-                'name': 'Bệnh phổi tắc nghẽn mạn tính (COPD)',
-                'description': 'Nhóm bệnh phổi mạn tính gây khó thở và giảm luồng khí.',
-                'symptoms': ['Khó thở khi gắng sức', 'Ho mạn tính', 'Đờm có màu vàng hoặc xanh', 'Thở khò khè', 'Tức ngực'],
+                'name': 'Hen phế quản',
+                'description': 'Bệnh mạn tính gây viêm và co thắt đường thở, làm khó thở.',
+                'symptoms': ['Khó thở', 'Khò khè', 'Tức ngực', 'Ho, đặc biệt về đêm', 'Khó thở khi gắng sức', 'Hen suyễn'],
                 'severity': 'high',
-                'treatment_guidelines': 'Ngừng hút thuốc, thuốc giãn phế quản, corticosteroid dạng hít, oxy liệu pháp nếu cần.'
+                'treatment_guidelines': 'Thuốc giãn phế quản dạng hít, corticosteroid dạng hít, thuốc kiểm soát dài hạn, tránh các yếu tố kích phát.'
             },
             {
-                'name': 'Viêm amidan',
-                'description': 'Viêm amidan do vi khuẩn hoặc virus.',
-                'symptoms': ['Đau họng', 'Khó nuốt', 'Sốt', 'Hạch cổ sưng', 'Đau tai', 'Hơi thở hôi'],
+                'name': 'Viêm khớp dạng thấp',
+                'description': 'Bệnh tự miễn gây viêm màng hoạt dịch tại các khớp.',
+                'symptoms': ['Đau nhức xương khớp', 'Sưng khớp', 'Cứng khớp buổi sáng', 'Mệt mỏi', 'Sốt nhẹ', 'Viêm khớp dạng thấp', 'Viêm khớp'],
+                'severity': 'high',
+                'treatment_guidelines': 'Thuốc chống viêm không steroid (NSAIDs), thuốc chống thấp khớp làm thay đổi bệnh (DMARDs), thuốc sinh học, vật lý trị liệu.'
+            },
+            {
+                'name': 'Đau thần kinh tọa',
+                'description': 'Đau dọc theo đường đi của dây thần kinh tọa, thường do đĩa đệm thoát vị chèn ép.',
+                'symptoms': ['Đau từ lưng dưới xuống chân', 'Tê bì chân', 'Yếu chân', 'Khó di chuyển', 'Đau tăng khi ngồi'],
                 'severity': 'medium',
-                'treatment_guidelines': 'Kháng sinh nếu do vi khuẩn, giảm đau, uống nhiều nước, súc họng bằng nước muối, cắt amidan nếu tái phát nhiều lần.'
+                'treatment_guidelines': 'Thuốc giảm đau, vật lý trị liệu, nghỉ ngơi, tiêm corticosteroid cạnh cột sống, phẫu thuật nếu nghiêm trọng.'
+            },
+            {
+                'name': 'Viêm loét dạ dày',
+                'description': 'Vết loét ở niêm mạc dạ dày, thường do vi khuẩn H. pylori hoặc sử dụng NSAIDs kéo dài.',
+                'symptoms': ['Đau thượng vị', 'Buồn nôn', 'Nôn', 'Chán ăn', 'Đầy hơi', 'Ợ chua', 'Phân đen'],
+                'severity': 'high',
+                'treatment_guidelines': 'Thuốc ức chế bơm proton (PPI), kháng sinh nếu do H. pylori, tránh rượu và thức ăn cay nóng, thuốc kháng acid.'
             },
         ]
+        
+        # Dictionary to store symptom objects
+        symptom_objects = {}
+        for symptom in Symptom.objects.all():
+            symptom_objects[symptom.name] = symptom
         
         self.stdout.write('Adding new diseases...')
         for disease_data in new_diseases_data:
@@ -311,14 +333,14 @@ class Command(BaseCommand):
             )
             
             if created:
+                self.stdout.write(f'  Added disease: {disease.name}')
                 # Add symptoms to the disease
                 for symptom_name in disease_data['symptoms']:
-                    try:
-                        symptom = Symptom.objects.get(name=symptom_name)
-                        disease.symptoms.add(symptom)
-                    except Symptom.DoesNotExist:
-                        self.stdout.write(f'  Warning: Symptom {symptom_name} does not exist')
-                
-                self.stdout.write(f'  Added disease: {disease.name}')
+                    if symptom_name in symptom_objects:
+                        disease.symptoms.add(symptom_objects[symptom_name])
+                    else:
+                        self.stdout.write(f'    Warning: Symptom "{symptom_name}" not found')
             else:
-                self.stdout.write(f'  Disease already exists: {disease.name}') 
+                self.stdout.write(f'  Disease already exists: {disease.name}')
+                
+        self.stdout.write(self.style.SUCCESS('Successfully added more data to the database!')) 

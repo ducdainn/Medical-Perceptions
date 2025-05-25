@@ -29,9 +29,11 @@
                     </p>
                     <p class="card-text">
                         <strong>Triệu chứng:</strong>
-                        {% for symptom in diagnosis.symptoms.all %}
-                            <span class="badge bg-secondary me-1">{{ symptom.name }}</span>
-                        {% endfor %}
+                        <ul class="list-unstyled mb-0 mt-1">
+                            {% for symptom in diagnosis.symptoms.all %}
+                                <li><i class="fas fa-check-circle text-secondary me-1"></i>{{ symptom.name }}</li>
+                            {% endfor %}
+                        </ul>
                     </p>
                     <a href="{% url 'diagnosis:detail' diagnosis.pk %}" class="btn btn-outline-primary">
                         Xem chi tiết

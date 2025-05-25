@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Prescription Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <style>
+        .prescription-container {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        .medication-item {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            min-height: 120px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .remove-item {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .select2-container {
+            width: 100% !important;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 38px;
+        }
+        
+        .inventory-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .inventory-warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        #medication-items {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .form-control, .form-select {
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn-outline-primary {
+            min-width: 150px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .medication-item {
+                padding: 10px;
+            }
+            
+            .medication-item .row {
+                margin: 0;
+            }
+            
+            .medication-item .col-md-6 {
+                padding: 0 5px;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4 prescription-container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-prescription me-2"></i>
+                            Test Prescription Form
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="prescriptionForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tên bệnh nhân</label>
+                                        <input type="text" class="form-control" value="Test Patient">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Trạng thái</label>
+                                        <select class="form-select">
+                                            <option value="pending" selected>Chờ xử lý</option>
+                                            <option value="processing">Đang xử lý</option>
+                                            <option value="completed">Hoàn thành</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Ghi chú</label>
+                                <textarea class="form-control" rows="3" placeholder="Ghi chú về đơn thuốc..."></textarea>
+                            </div>
+
+                            <h4 class="mt-4 mb-3">
+                                <i class="fas fa-pills me-2 text-primary"></i>
+                                Danh sách thuốc
+                            </h4>
+                            
+                            <div id="medication-items" class="border rounded p-3 bg-light">
+                                <input type="hidden" id="id_prescriptionitem_set-TOTAL_FORMS" value="1">
+                                <input type="hidden" id="id_prescriptionitem_set-INITIAL_FORMS" value="0">
+                                
+                                <div class="medication-item">
+                                    <div class="remove-item">
+                                        <button type="button" class="btn btn-sm btn-danger" title="Xóa thuốc này">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">Thuốc:</label>
+                                                <select name="prescriptionitem_set-0-medicine" id="id_prescriptionitem_set-0-medicine" class="form-select select2">
+                                                    <option value="">Chọn thuốc</option>
+                                                    <option value="1">Paracetamol 500mg</option>
+                                                    <option value="2">Ibuprofen 400mg</option>
+                                                    <option value="3">Amoxicillin 250mg</option>
+                                                    <option value="4">Aspirin 100mg</option>
+                                                    <option value="5">Vitamin C 1000mg</option>
+                                                </select>
+                                                <div class="inventory-info" data-item-id="0"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">Số lượng:</label>
+                                                <input type="number" name="prescriptionitem_set-0-quantity" id="id_prescriptionitem_set-0-quantity" class="form-control" min="1" value="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">Đơn vị:</label>
+                                                <input type="text" name="prescriptionitem_set-0-unit" id="id_prescriptionitem_set-0-unit" class="form-control" value="viên">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label fw-bold">Hướng dẫn sử dụng:</label>
+                                                <input type="text" name="prescriptionitem_set-0-instructions" id="id_prescriptionitem_set-0-instructions" class="form-control" placeholder="Ví dụ: Uống sau ăn, 2 lần/ngày">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Add more medications button -->
+                            <div class="d-flex justify-content-center mb-4 mt-3">
+                                <button type="button" id="add-medication" class="btn btn-outline-primary btn-lg">
+                                    <i class="fas fa-plus-circle me-2"></i>Thêm thuốc
+                                </button>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>Hủy
+                                </button>
+                                <button type="button" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Lưu đơn thuốc
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty formset template for JavaScript -->
+    <div id="empty-form-template" class="d-none">
+        <div class="medication-item">
+            <div class="remove-item">
+                <button type="button" class="btn btn-sm btn-danger" title="Xóa thuốc này">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="form-group">
+                        <label class="form-label fw-bold">Thuốc:</label>
+                        <select name="prescriptionitem_set-__prefix__-medicine" id="id_prescriptionitem_set-__prefix__-medicine" class="form-select select2">
+                            <option value="">Chọn thuốc</option>
+                            <option value="1">Paracetamol 500mg</option>
+                            <option value="2">Ibuprofen 400mg</option>
+                            <option value="3">Amoxicillin 250mg</option>
+                            <option value="4">Aspirin 100mg</option>
+                            <option value="5">Vitamin C 1000mg</option>
+                        </select>
+                        <div class="inventory-info" data-item-id="__prefix__"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="form-group">
+                        <label class="form-label fw-bold">Số lượng:</label>
+                        <input type="number" name="prescriptionitem_set-__prefix__-quantity" id="id_prescriptionitem_set-__prefix__-quantity" class="form-control" min="1" value="1">
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="form-group">
+                        <label class="form-label fw-bold">Đơn vị:</label>
+                        <input type="text" name="prescriptionitem_set-__prefix__-unit" id="id_prescriptionitem_set-__prefix__-unit" class="form-control" value="viên">
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="form-group">
+                        <label class="form-label fw-bold">Hướng dẫn sử dụng:</label>
+                        <input type="text" name="prescriptionitem_set-__prefix__-instructions" id="id_prescriptionitem_set-__prefix__-instructions" class="form-control" placeholder="Ví dụ: Uống sau ăn, 2 lần/ngày">
+                    </div>
+                </div>
+            </div>
+            <!-- Hidden fields -->
+            <input type="hidden" name="prescriptionitem_set-__prefix__-id" id="id_prescriptionitem_set-__prefix__-id">
+            <input type="hidden" name="prescriptionitem_set-__prefix__-DELETE" id="id_prescriptionitem_set-__prefix__-DELETE">
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            console.log('Test Prescription form JavaScript loaded');
+            
+            // Initialize Select2 for existing dropdowns
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+            
+            // Handle adding new medication items
+            let formCount = parseInt($('#id_prescriptionitem_set-TOTAL_FORMS').val()) || 1;
+            console.log('Initial form count:', formCount);
+            
+            $('#add-medication').click(function(e) {
+                e.preventDefault();
+                console.log('Add medication button clicked');
+                
+                let template = $('#empty-form-template').html();
+                if (!template) {
+                    console.error('Empty form template not found');
+                    return;
+                }
+                
+                let newForm = template.replace(/__prefix__/g, formCount);
+                $('#medication-items').append(newForm);
+                
+                // Initialize Select2 for new dropdown
+                $('#id_prescriptionitem_set-' + formCount + '-medicine').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%'
+                });
+                
+                // Setup remove button for new item
+                setupRemoveButtons();
+                
+                // Setup medication change listener
+                setupMedicationChangeListeners();
+                
+                // Increment form count
+                formCount++;
+                $('#id_prescriptionitem_set-TOTAL_FORMS').val(formCount);
+                console.log('New form count:', formCount);
+            });
+            
+            // Setup remove buttons for existing items
+            function setupRemoveButtons() {
+                $('.remove-item button').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    console.log('Remove button clicked');
+                    
+                    let item = $(this).closest('.medication-item');
+                    
+                    if ($('.medication-item').length > 1) {
+                        item.remove();
+                        updateFormIndexes();
+                    } else {
+                        alert('Đơn thuốc phải có ít nhất một loại thuốc!');
+                    }
+                });
+            }
+            
+            // Update form indexes after removal
+            function updateFormIndexes() {
+                let forms = $('#medication-items .medication-item:visible');
+                let newFormCount = forms.length;
+                $('#id_prescriptionitem_set-TOTAL_FORMS').val(newFormCount);
+                
+                forms.each(function(index) {
+                    let inputs = $(this).find('input, select, textarea');
+                    inputs.each(function() {
+                        let name = $(this).attr('name');
+                        if (name && name.includes('prescriptionitem_set-')) {
+                            name = name.replace(/prescriptionitem_set-\d+/, 'prescriptionitem_set-' + index);
+                            $(this).attr('name', name);
+                            
+                            let id = $(this).attr('id');
+                            if (id && id.includes('id_prescriptionitem_set-')) {
+                                id = id.replace(/id_prescriptionitem_set-\d+/, 'id_prescriptionitem_set-' + index);
+                                $(this).attr('id', id);
+                            }
+                        }
+                    });
+                    
+                    $(this).find('.inventory-info').attr('data-item-id', index);
+                });
+                
+                // Update global form count for next addition
+                formCount = newFormCount;
+            }
+            
+            // Setup medication change listeners
+            function setupMedicationChangeListeners() {
+                $('[id^=id_prescriptionitem_set-][id$=-medicine]').off('change').on('change', function() {
+                    let medicationId = $(this).val();
+                    let match = $(this).attr('id').match(/id_prescriptionitem_set-(\d+)-medicine/);
+                    
+                    if (match) {
+                        let itemId = match[1];
+                        
+                        if (medicationId) {
+                            $('[data-item-id="' + itemId + '"]').html('<small class="text-success"><i class="fas fa-check-circle me-1"></i>Đã chọn thuốc</small>');
+                        } else {
+                            $('[data-item-id="' + itemId + '"]').html('');
+                        }
+                    }
+                });
+            }
+            
+            // Initial setup
+            setupRemoveButtons();
+            setupMedicationChangeListeners();
+            
+            // Add some feedback for the user
+            $('#add-medication').hover(
+                function() {
+                    $(this).html('<i class="fas fa-plus-circle me-2"></i>Thêm thuốc mới');
+                },
+                function() {
+                    $(this).html('<i class="fas fa-plus-circle me-2"></i>Thêm thuốc');
+                }
+            );
+            
+            // Test functionality
+            console.log('All functionality loaded. You can test:');
+            console.log('1. Click "Thêm thuốc" to add new medication');
+            console.log('2. Click X button to remove medication');
+            console.log('3. Select medications from dropdown');
+        });
+    </script>
+</body>
+</html> 

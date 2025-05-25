@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chatbot ReViCARE</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .test-section h3 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        
+        .test-questions {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .question-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.3s;
+        }
+        
+        .question-btn:hover {
+            background: #2980b9;
+        }
+        
+        .chat-interface {
+            margin-top: 30px;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: white;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .user-message {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .bot-message {
+            background: #f1f8e9;
+            margin-right: auto;
+        }
+        
+        .message-type {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        
+        .chat-input button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .chat-input button:hover {
+            background: #229954;
+        }
+        
+        .improvements {
+            background: #e8f5e8;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .improvements h3 {
+            color: #27ae60;
+            margin-top: 0;
+        }
+        
+        .improvement-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .improvement-list li {
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+        
+        .improvement-list li::before {
+            content: "✅ ";
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Test Chatbot ReViCARE</h1>
+        
+        <div class="improvements">
+            <h3>Cải thiện mới</h3>
+            <ul class="improvement-list">
+                <li>Xử lý lời chào và cảm ơn tự nhiên</li>
+                <li>Mở rộng câu hỏi ngắn thành hướng dẫn chi tiết</li>
+                <li>Tư vấn phòng ngừa bệnh cụ thể</li>
+                <li>Fallback thông minh khi Gemini API lỗi</li>
+                <li>Phân biệt câu hỏi y tế và không y tế</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h3>🗣️ Test Lời Chào & Cảm Ơn</h3>
+            <div class="test-questions">
+                <button class="question-btn" onclick="sendTestMessage('Xin chào!')">Xin chào!</button>
+                <button class="question-btn" onclick="sendTestMessage('Bạn là ai?')">Bạn là ai?</button>
+                <button class="question-btn" onclick="sendTestMessage('Cảm ơn bạn')">Cảm ơn bạn</button>
+                <button class="question-btn" onclick="sendTestMessage('Tạm biệt')">Tạm biệt</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Test Câu Hỏi Ngắn</h3>
+            <div class="test-questions">
+                <button class="question-btn" onclick="sendTestMessage('Đau đầu')">Đau đầu</button>
+                <button class="question-btn" onclick="sendTestMessage('Đau bụng')">Đau bụng</button>
+                <button class="question-btn" onclick="sendTestMessage('Sốt')">Sốt</button>
+                <button class="question-btn" onclick="sendTestMessage('Thuốc')">Thuốc</button>
+                <button class="question-btn" onclick="sendTestMessage('Bệnh')">Bệnh</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔬 Test Câu Hỏi Y Tế</h3>
+            <div class="test-questions">
+                <button class="question-btn" onclick="sendTestMessage('Bệnh cúm có triệu chứng gì?')">Bệnh cúm có triệu chứng gì?</button>
+                <button class="question-btn" onclick="sendTestMessage('Tôi bị đau đầu và sốt')">Tôi bị đau đầu và sốt</button>
+                <button class="question-btn" onclick="sendTestMessage('Thuốc paracetamol còn bao nhiêu?')">Thuốc paracetamol còn bao nhiêu?</button>
+                <button class="question-btn" onclick="sendTestMessage('Triệu chứng tiểu đường type 2?')">Triệu chứng tiểu đường type 2?</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🛡️ Test Câu Hỏi Phòng Ngừa</h3>
+            <div class="test-questions">
+                <button class="question-btn" onclick="sendTestMessage('Làm thế nào để phòng ngừa cúm?')">Làm thế nào để phòng ngừa cúm?</button>
+                <button class="question-btn" onclick="sendTestMessage('Cách phòng ngừa COVID-19?')">Cách phòng ngừa COVID-19?</button>
+                <button class="question-btn" onclick="sendTestMessage('Ăn gì để tăng miễn dịch?')">Ăn gì để tăng miễn dịch?</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>❌ Test Câu Hỏi Ngoài Y Tế</h3>
+            <div class="test-questions">
+                <button class="question-btn" onclick="sendTestMessage('Python là gì?')">Python là gì?</button>
+                <button class="question-btn" onclick="sendTestMessage('Cách nấu phở?')">Cách nấu phở?</button>
+                <button class="question-btn" onclick="sendTestMessage('Thời tiết hôm nay?')">Thời tiết hôm nay?</button>
+            </div>
+        </div>
+        
+        <div class="chat-interface">
+            <div class="chat-header">
+                💬 Chat với ReViCARE Bot
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Nhập câu hỏi của bạn..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addMessage(message, isUser, type = '') {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            if (type && !isUser) {
+                messageDiv.innerHTML = `
+                    <div class="message-type">Type: ${type}</div>
+                    <div>${message}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = message;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function sendTestMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+            
+            // Simulate API call (replace with actual API call)
+            addMessage('⏳ Đang xử lý...', false);
+            
+            // Replace this with actual fetch to your chatbot API
+            setTimeout(() => {
+                // Remove loading message
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.removeChild(chatMessages.lastChild);
+                
+                // Add demo response based on message type
+                const response = getDemoResponse(message);
+                addMessage(response.message, false, response.type);
+            }, 1000);
+        }
+        
+        function getDemoResponse(message) {
+            const msg = message.toLowerCase();
+            
+            if (msg.includes('xin chào') || msg.includes('chào')) {
+                return {
+                    type: 'greeting',
+                    message: 'Xin chào! Tôi là trợ lý chăm sóc sức khỏe tự động của ReViCARE. Tôi có thể giúp bạn tìm hiểu về các vấn đề y tế, thuốc men, và sức khỏe. Bạn có câu hỏi gì cho tôi không?'
+                };
+            }
+            
+            if (msg.includes('cảm ơn')) {
+                return {
+                    type: 'greeting',
+                    message: 'Rất vui được hỗ trợ bạn! Nếu có thêm câu hỏi nào về sức khỏe, đừng ngại hỏi nhé.'
+                };
+            }
+            
+            if (msg === 'đau đầu') {
+                return {
+                    type: 'expanded',
+                    message: `Đau đầu có thể có nhiều nguyên nhân:
+• Căng thẳng, stress
+• Thiếu ngủ
+• Khô cơ thể (thiếu nước)
+• Áp lực công việc
+• Viêm xoang
+• Migraine
+
+Bạn có thể cho biết thêm: đau đầu có kèm theo triệu chứng nào khác không? Đau bao lâu rồi?`
+                };
+            }
+            
+            if (msg.includes('phòng ngừa cúm')) {
+                return {
+                    type: 'prevention',
+                    message: `Để phòng ngừa cúm, bạn có thể:
+• Tiêm vắc-xin cúm hàng năm
+• Rửa tay thường xuyên với xà phòng
+• Tránh tiếp xúc gần với người bệnh
+• Che miệng khi ho, hắt hơi
+• Tăng cường sức đề kháng bằng ăn uống đầy đủ
+• Giữ vệ sinh môi trường sống và làm việc`
+                };
+            }
+            
+            if (msg.includes('python') || msg.includes('phở') || msg.includes('thời tiết')) {
+                return {
+                    type: 'fallback',
+                    message: 'Tôi là trợ lý chăm sóc sức khỏe của ReViCARE, chuyên hỗ trợ các vấn đề y tế và sức khỏe. Nếu bạn có câu hỏi về chủ đề khác, vui lòng tìm kiếm trên các nguồn thông tin phù hợp khác.'
+                };
+            }
+            
+            // Default response
+            return {
+                type: 'ai',
+                message: 'Đây là demo response. Để test thực tế, vui lòng truy cập http://localhost:8000/chatbot/bot/ sau khi khởi động server Django.'
+            };
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // Welcome message
+        window.onload = function() {
+            addMessage('Chào mừng bạn đến với ReViCARE Chatbot Demo! Hãy thử các câu hỏi test ở trên hoặc nhập câu hỏi của riêng bạn.', false, 'system');
+        };
+    </script>
+</body>
+</html> 
